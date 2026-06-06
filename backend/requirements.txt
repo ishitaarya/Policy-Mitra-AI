@@ -9,3 +9,4 @@ langchain
 openai
 pytest
 httpx
+python-multipart

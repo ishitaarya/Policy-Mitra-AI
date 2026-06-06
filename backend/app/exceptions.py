@@ -24,3 +24,7 @@ class ModelConfigurationError(PolicyMitraError):
 
 class PromptConfigurationError(PolicyMitraError):
     pass
+
+
+class WorkflowError(PolicyMitraError):
+    pass
