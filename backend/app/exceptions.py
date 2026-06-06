@@ -20,3 +20,11 @@ class NoExtractableTextError(PDFProcessingError):
 
 class ModelConfigurationError(PolicyMitraError):
     pass
+
+
+class PromptConfigurationError(PolicyMitraError):
+    pass
+
+
+class WorkflowError(PolicyMitraError):
+    pass
