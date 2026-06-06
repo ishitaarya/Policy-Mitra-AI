@@ -11,6 +11,8 @@ from app.exceptions import ModelConfigurationError
 EMPTY_EVIDENCE_RESPONSE = {
     "answer": "Bhai ye policy document mein nahi mila.",
     "risk_level": "UNKNOWN",
+    "consequence": "Not specified",
+    "action_required": "Not specified",
     "action_items": [],
 }
 
@@ -50,8 +52,8 @@ class NavigateLabsLLMService:
     def _build_messages(self, evidence: str, question: str) -> list[dict[str, str]]:
         system_prompt = (
             "You are a policy response adapter. "
-            "Return JSON only with keys answer, risk_level, action_items. "
-            "Use only the provided evidence and question. "
+            "Return JSON only with keys: answer, risk_level,consequence,action_required, action_items. "
+            "Use only the provided evidence. "
             "Do not include markdown or commentary."
         )
         user_prompt = (
@@ -82,7 +84,8 @@ class NavigateLabsLLMService:
         if not isinstance(parsed, dict):
             raise ValueError("Model response must be a JSON object")
 
-        for key in ("answer", "risk_level", "action_items"):
+        for key in ("answer", "risk_level","consequence",
+    "action_required", "action_items"):
             if key not in parsed:
                 raise ValueError(f"Missing required key: {key}")
 
@@ -92,6 +95,8 @@ class NavigateLabsLLMService:
         return {
             "answer": parsed["answer"],
             "risk_level": parsed["risk_level"],
+            "consequence": parsed["consequence"],
+            "action_required": parsed["action_required"],
             "action_items": parsed["action_items"],
         }
 
