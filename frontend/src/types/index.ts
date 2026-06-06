@@ -57,11 +57,31 @@ export interface ChatMessage {
   sources?: SourceEvidence[]
   policyCategory?: string
   requirement?: string
+  relatedUserQuery?: string
 }
+
+export type ComplaintPriority = 'Low' | 'Medium' | 'High'
 
 export interface ComplaintData {
   category: string
   priority: string
   department: string
   complaint: string
+}
+
+export interface GeneratedComplaint {
+  referenceId: string
+  category: string
+  priority: ComplaintPriority
+  department: string
+  summary: string
+  formalDraft: string
+  generatedAt: string
+}
+
+export interface ComplaintGenerationContext {
+  policyCategory?: string
+  assistantSummary?: string
+  riskLevel?: RiskLevel
+  department?: string
 }

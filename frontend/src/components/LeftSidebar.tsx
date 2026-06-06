@@ -7,6 +7,8 @@ import {
   Plus,
   Upload,
 } from 'lucide-react'
+import { useRef } from 'react'
+import { uploadPolicy } from '@/lib/api'
 import { Logo } from '@/components/Logo'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -16,6 +18,35 @@ import { cn } from '@/lib/utils'
 
 export function LeftSidebar() {
   const activeDoc = documents.find((d) => d.active)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const resp = await uploadPolicy(file)
+      // persist last uploaded document info locally
+      const saved = {
+        document_id: resp.document_id,
+        name: file.name,
+        pages: resp.pages,
+        uploadedAt: 'just now',
+      }
+      localStorage.setItem('policymitra_last_document', JSON.stringify(saved))
+      window.alert(`Upload successful: ${file.name}`)
+    } catch (err: any) {
+      console.error('upload error', err)
+      window.alert(`Upload failed: ${err?.message ?? 'Unknown error'}`)
+    } finally {
+      // reset input
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   return (
     <motion.aside
@@ -80,10 +111,19 @@ export function LeftSidebar() {
           </div>
         </div>
 
-        <Button variant="secondary" className="w-full" size="sm">
-          <Upload className="h-4 w-4" />
-          Upload PDF
-        </Button>
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <Button variant="secondary" className="w-full" size="sm" onClick={handleUploadClick}>
+            <Upload className="h-4 w-4" />
+            Upload PDF
+          </Button>
+        </>
       </div>
 
       <Separator className="bg-slate-800/60" />
