@@ -15,9 +15,15 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { documents, conversations } from '@/data/mock'
 import { cn } from '@/lib/utils'
+import type { UploadedDocument } from '@/types'
 
-export function LeftSidebar() {
-  const activeDoc = documents.find((d) => d.active)
+interface LeftSidebarProps {
+  activeDocument: UploadedDocument | null
+  onDocumentUploaded: (document: UploadedDocument) => void
+}
+
+export function LeftSidebar({ activeDocument, onDocumentUploaded }: LeftSidebarProps) {
+  const mockActiveDoc = documents.find((d) => d.active)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const handleUploadClick = () => {
@@ -35,9 +41,12 @@ export function LeftSidebar() {
         document_id: resp.document_id,
         name: file.name,
         pages: resp.pages,
+        chunks_created: resp.chunks_created,
+        status: resp.status,
         uploadedAt: 'just now',
       }
       localStorage.setItem('policymitra_last_document', JSON.stringify(saved))
+      onDocumentUploaded(saved)
       window.alert(`Upload successful: ${file.name}`)
     } catch (err: any) {
       console.error('upload error', err)
@@ -76,9 +85,11 @@ export function LeftSidebar() {
               </div>
               <div className="min-w-0">
                 <p className="truncate text-xs font-medium text-slate-200">
-                  {activeDoc?.name}
+                  {activeDocument?.name ?? mockActiveDoc?.name}
                 </p>
-                <p className="text-[10px] text-slate-500">{activeDoc?.pages} pages</p>
+                <p className="text-[10px] text-slate-500">
+                  {activeDocument?.pages ?? mockActiveDoc?.pages} pages
+                </p>
               </div>
             </div>
             <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" />

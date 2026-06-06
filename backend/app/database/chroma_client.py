@@ -5,6 +5,7 @@ from pathlib import Path
 
 import chromadb
 
+from app.config import storage_path
 from app.models.document_models import ChunkRecord, IngestionStatistics
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ COLLECTION_NAME = "policy_documents"
 
 
 def _get_client(persist_dir: str | Path | None = None) -> chromadb.PersistentClient:
-    directory = Path(persist_dir or "./vectorstore")
+    directory = Path(persist_dir) if persist_dir is not None else storage_path("CHROMA_PERSIST_DIR", "vectorstore")
     directory.mkdir(parents=True, exist_ok=True)
     return chromadb.PersistentClient(path=str(directory))
 
@@ -35,8 +36,11 @@ def store_chunks(
 
     client = _get_client(persist_dir)
     collection = _get_collection(client)
+    document_id = chunks[0].document_id
 
-    collection.add(
+    collection.delete(where={"document_id": document_id})
+
+    collection.upsert(
         ids=[chunk.chunk_id for chunk in chunks],
         documents=[chunk.text for chunk in chunks],
         metadatas=[
@@ -51,7 +55,6 @@ def store_chunks(
         embeddings=embeddings,
     )
 
-    document_id = chunks[0].document_id
     stats = IngestionStatistics(
         document_id=document_id,
         pages=len({chunk.page for chunk in chunks}),
@@ -75,12 +78,17 @@ def get_document_chunks(
     result = collection.get(where={"document_id": document_id}, include=["documents", "metadatas"])
 
     records: list[dict[str, object]] = []
-    for document_text, metadata in zip(result.get("documents", []), result.get("metadatas", []), strict=False):
+    for record_id, document_text, metadata in zip(
+        result.get("ids", []),
+        result.get("documents", []),
+        result.get("metadatas", []),
+        strict=False,
+    ):
         records.append(
             {
                 "document_id": metadata["document_id"],
-                "page": metadata["page"],
-                "chunk_id": metadata["chunk_id"],
+                "page": metadata.get("page", 0),
+                "chunk_id": metadata.get("chunk_id", record_id),
                 "text": document_text,
             }
         )

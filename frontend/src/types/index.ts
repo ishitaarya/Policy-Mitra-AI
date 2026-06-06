@@ -8,6 +8,15 @@ export interface Document {
   active?: boolean
 }
 
+export interface UploadedDocument {
+  document_id: string
+  name: string
+  pages: number
+  chunks_created: number
+  status: string
+  uploadedAt: string
+}
+
 export interface Conversation {
   id: string
   title: string

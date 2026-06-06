@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from app.services import llm_service
-from app.services.retrieval_service import build_context, retrieve_context
+from app.services.retrieval_service import build_context, retrieve_relevant_chunks
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +64,13 @@ def answer_policy_question(
         persist_dir,
     )
 
-    chunks = retrieve_context(
+    retrieval = retrieve_relevant_chunks(
+        query=question,
         document_id=document_id,
-        question=question,
-        persist_dir=persist_dir
+        persist_dir=persist_dir,
+        top_k=top_k,
     )
+    chunks = retrieval["chunks"]
 
     logger.info(
         "workflow | document_id=%s | chunks_retrieved=%d",
@@ -80,8 +82,9 @@ def answer_policy_question(
         logger.warning("workflow | document_id=%s | NO chunks found → returning NO_MATCH", document_id)
         return dict(NO_MATCH_RESPONSE)
 
-    top_score = max((float(chunk["score"]) for chunk in chunks), default=0.0)
-    confidence = _calculate_numeric_confidence(top_score)
+    top_score = float(retrieval["top_score"])
+    confidence_score = max((float(chunk["score"]) for chunk in chunks), default=top_score)
+    confidence = _calculate_numeric_confidence(confidence_score)
 
     # Note: similarity score could be 0 if distance >= 1
     if top_score <= 0.0:
@@ -95,7 +98,20 @@ def answer_policy_question(
     context = build_context(chunks)
     logger.debug("workflow | document_id=%s | context_chars=%d", document_id, len(context))
 
-    llm_response = llm_service.generate_structured_response(evidence=context, question=question)
+    try:
+        llm_response = llm_service.generate_structured_response(evidence=context, question=question)
+    except llm_service.StructuredResponseError as exc:
+        logger.warning(
+            "workflow | document_id=%s | using unstructured model answer: %s",
+            document_id,
+            exc,
+        )
+        llm_response = {
+            "answer": exc.raw_content,
+            "risk_level": "UNKNOWN",
+            "action_items": [],
+            "consequence": "Not specified in policy.",
+        }
     logger.info(
         "workflow | document_id=%s | llm_answer_preview=%.200s",
         document_id,

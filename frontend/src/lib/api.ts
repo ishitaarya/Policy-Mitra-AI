@@ -1,11 +1,11 @@
-interface UploadPolicyResult {
+export interface UploadPolicyResult {
   document_id: string
   pages: number
   chunks_created: number
   status: string
 }
 
-interface AskResponse {
+export interface AskResponse {
   answer: string
   risk_level: string
   confidence: number
@@ -13,6 +13,11 @@ interface AskResponse {
   action_plan?: Array<Record<string, unknown>>
   consequence?: string
   sources: Array<{ page: number; excerpt: string }>
+  metadata?: {
+    document_id: string
+    chunks_used: number
+    top_score: number
+  }
 }
 
 // In development: Vite proxies `/api/*` → backend (no CORS issues).

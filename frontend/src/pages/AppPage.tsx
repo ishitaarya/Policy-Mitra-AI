@@ -14,9 +14,21 @@ import { ComplaintGeneratorDrawer } from '@/components/ComplaintGeneratorDrawer'
 import { ComplaintDrawerProvider } from '@/context/ComplaintDrawerContext'
 import { useAuth } from '@/context/AuthContext'
 import { hasPendingDemo } from '@/lib/demoMode'
+import type { UploadedDocument } from '@/types'
+
+function loadLastDocument(): UploadedDocument | null {
+  try {
+    const saved = localStorage.getItem('policymitra_last_document')
+    return saved ? JSON.parse(saved) as UploadedDocument : null
+  } catch {
+    localStorage.removeItem('policymitra_last_document')
+    return null
+  }
+}
 
 export function AppPage() {
   const [workflowActive, setWorkflowActive] = useState(false)
+  const [activeDocument, setActiveDocument] = useState<UploadedDocument | null>(loadLastDocument)
   const { isAuthenticated, quickDemoLogin } = useAuth()
 
   useEffect(() => {
@@ -52,9 +64,15 @@ export function AppPage() {
       <WelcomeCard />
 
       <div className="relative z-10 flex flex-1 overflow-hidden">
-        <LeftSidebar />
+        <LeftSidebar
+          activeDocument={activeDocument}
+          onDocumentUploaded={setActiveDocument}
+        />
         <main className="flex flex-1 flex-col overflow-hidden">
-          <ChatInterface onWorkflowChange={setWorkflowActive} />
+          <ChatInterface
+            activeDocument={activeDocument}
+            onWorkflowChange={setWorkflowActive}
+          />
         </main>
         <RightSidebar />
       </div>

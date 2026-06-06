@@ -24,6 +24,12 @@ EMPTY_EVIDENCE_RESPONSE = {
 SYSTEM_PROMPT_PATH = Path(__file__).resolve().parents[1] / "prompts" / "system_prompt.txt"
 
 
+class StructuredResponseError(ValueError):
+    def __init__(self, message: str, raw_content: str):
+        super().__init__(message)
+        self.raw_content = raw_content
+
+
 def _read_env(name: str, fallback: str | None = None) -> str:
     value = os.getenv(name)
     if value:
@@ -108,18 +114,25 @@ class NavigateLabsLLMService:
             parsed = json.loads(content)
         except json.JSONDecodeError as exc:
             logger.error("llm | failed to parse JSON | content=%.100s | error=%s", content, exc)
-            raise ValueError(f"Failed to parse model response as JSON: {exc}") from exc
+            raise StructuredResponseError(
+                f"Failed to parse model response as JSON: {exc}",
+                raw_content=content,
+            ) from exc
 
         if not isinstance(parsed, dict):
-            raise ValueError("Model response must be a JSON object")
+            raise StructuredResponseError("Model response must be a JSON object", raw_content=content)
 
         for key in ("answer", "risk_level", "action_items", "consequence"):
             if key not in parsed:
                 logger.error("llm | missing required key | key=%s | parsed=%s", key, parsed)
-                raise ValueError(f"Missing required key: {key}")
+                fallback_content = str(parsed.get("answer") or content)
+                raise StructuredResponseError(
+                    f"Missing required key: {key}",
+                    raw_content=fallback_content,
+                )
 
         if not isinstance(parsed["action_items"], list):
-            raise ValueError("action_items must be a list")
+            raise StructuredResponseError("action_items must be a list", raw_content=str(parsed["answer"]))
 
         return {
             "answer": parsed["answer"],
