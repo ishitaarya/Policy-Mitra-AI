@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from PIL import Image
 
 import pytest
 
@@ -63,10 +64,10 @@ def _write_pdf(tmp_path: Path, name: str, content: bytes) -> Path:
 
 def test_load_valid_pdf(tmp_path: Path) -> None:
     pdf_path = _write_pdf(tmp_path, "valid.pdf", _make_pdf_bytes(["Attendance policy 75 percent."]))
-
+    # ensure OCR is not used for regular extracted text
     pages = load_pdf(pdf_path)
 
-    assert pages == [{"page": 1, "text": "Attendance policy 75 percent."}]
+    assert pages == [{"page": 1, "text": "Attendance policy 75 percent.", "ocr_used": False}]
     metadata = build_document_metadata(pdf_path, page_count=len(pages))
     assert metadata.document_id == compute_document_id(pdf_path)
     assert metadata.filename == "valid.pdf"
@@ -101,14 +102,34 @@ def test_load_multi_page_pdf(tmp_path: Path) -> None:
     pages = load_pdf(pdf_path)
 
     assert pages == [
-        {"page": 1, "text": "Page one text."},
-        {"page": 2, "text": "Page two text."},
-        {"page": 3, "text": "Page three text."},
+        {"page": 1, "text": "Page one text.", "ocr_used": False},
+        {"page": 2, "text": "Page two text.", "ocr_used": False},
+        {"page": 3, "text": "Page three text.", "ocr_used": False},
     ]
 
 
 def test_reject_pdf_with_no_text(tmp_path: Path) -> None:
     pdf_path = _write_pdf(tmp_path, "blank-text.pdf", _make_pdf_bytes(["", "   "]))
 
+    # If OCR is unavailable or returns nothing, we should still raise
     with pytest.raises(NoExtractableTextError):
         load_pdf(pdf_path)
+
+
+def test_scanned_page_uses_ocr(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Create a PDF where pdfplumber returns empty text, but OCR returns content
+    pdf_path = _write_pdf(tmp_path, "scanned.pdf", _make_pdf_bytes([" "]))
+
+    # Monkeypatch rendering and OCR to simulate scanned page handling
+    monkeypatch.setattr(
+        "app.ingestion.pdf_loader._render_page_to_image",
+        lambda path, idx: Image.new("RGB", (100, 100), color=(255, 255, 255)),
+    )
+    monkeypatch.setattr(
+        "app.ingestion.pdf_loader._run_ocr_on_image",
+        lambda img: ("Scanned attendance 75%", 0.92),
+    )
+
+    pages = load_pdf(pdf_path)
+
+    assert pages == [{"page": 1, "text": "Scanned attendance 75%", "ocr_used": True}]

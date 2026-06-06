@@ -73,6 +73,7 @@ def test_ask_success(monkeypatch) -> None:
             "risk_level": "HIGH",
             "confidence": 92,
             "action_items": ["Maintain at least 75% attendance"],
+            "consequence": "May be debarred from examinations.",
             "sources": [{"page": 12, "excerpt": "Students must maintain 75% attendance."}],
             "metadata": {"document_id": document_id, "chunks_used": 2, "top_score": 0.91},
         },

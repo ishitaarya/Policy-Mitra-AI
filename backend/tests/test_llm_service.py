@@ -85,11 +85,12 @@ def test_empty_evidence_returns_fallback(monkeypatch: pytest.MonkeyPatch) -> Non
         "answer": "Bhai ye policy document mein nahi mila.",
         "risk_level": "UNKNOWN",
         "action_items": [],
+        "consequence": "Not specified in policy.",
     }
 
 
 def test_successful_structured_response(monkeypatch: pytest.MonkeyPatch) -> None:
-    payload = {"answer": "Bhai 75% attendance required hai.", "risk_level": "HIGH", "action_items": ["Meet HOD"]}
+    payload = {"answer": "Bhai 75% attendance required hai.", "risk_level": "HIGH", "action_items": ["Meet HOD"], "consequence": "May be debarred from examinations."}
     service = _build_service(monkeypatch, ["supported-model"], content=json.dumps(payload))
 
     response = service.generate_structured_response(evidence="75% attendance required.", question="attendance?")

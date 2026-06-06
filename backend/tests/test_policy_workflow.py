@@ -40,6 +40,7 @@ def test_successful_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
             "answer": "Bhai minimum 75% attendance maintain karna zaroori hai.",
             "risk_level": "HIGH",
             "action_items": ["Maintain at least 75% attendance"],
+            "consequence": "May be debarred from examinations.",
         },
     )
 
@@ -143,7 +144,7 @@ def test_metadata_verification(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         policy_workflow.llm_service,
         "generate_structured_response",
-        lambda **kwargs: {"answer": "ok", "risk_level": "LOW", "action_items": []},
+        lambda **kwargs: {"answer": "ok", "risk_level": "LOW", "action_items": [], "consequence": "Not specified in policy."},
     )
 
     response = policy_workflow.answer_policy_question(document_id="doc-77", question="Question?")

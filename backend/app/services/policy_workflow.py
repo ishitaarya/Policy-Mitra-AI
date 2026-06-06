@@ -13,6 +13,7 @@ NO_MATCH_RESPONSE = {
     "confidence": 0,
     "action_items": [],
     "sources": [],
+    "consequence": "Not specified in policy.",
 }
 
 
@@ -27,6 +28,25 @@ def _build_sources(chunks: list[dict[str, object]]) -> list[dict[str, object]]:
         excerpt = " ".join(text.split())[:200]
         sources.append({"page": chunk["page"], "excerpt": excerpt})
     return sources
+
+
+def _assign_priority_for_task(task: str, risk_level: str) -> str:
+    t = task.lower()
+    if risk_level == "HIGH":
+        return "HIGH"
+    if any(x in t for x in ("must", "required", "immediately", "urgent", "debar")):
+        return "HIGH"
+    if any(x in t for x in ("should", "may", "recommend", "suggest", "request")):
+        return "MEDIUM"
+    return "LOW"
+
+
+def _build_action_plan(action_items: list[str], risk_level: str) -> list[dict[str, str]]:
+    plan: list[dict[str, str]] = []
+    for task in action_items:
+        priority = _assign_priority_for_task(task, risk_level)
+        plan.append({"task": task, "priority": priority})
+    return plan
 
 
 def answer_policy_question(
@@ -59,6 +79,8 @@ def answer_policy_question(
         "risk_level": llm_response["risk_level"],
         "confidence": confidence,
         "action_items": llm_response["action_items"],
+        "action_plan": _build_action_plan(llm_response["action_items"], llm_response["risk_level"]),
+        "consequence": llm_response.get("consequence", "Not specified in policy."),
         "sources": _build_sources(chunks),
         "metadata": {
             "document_id": document_id,

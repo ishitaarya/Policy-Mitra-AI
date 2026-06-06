@@ -13,9 +13,8 @@ from app.exceptions import ModelConfigurationError, PromptConfigurationError
 EMPTY_EVIDENCE_RESPONSE = {
     "answer": "Bhai ye policy document mein nahi mila.",
     "risk_level": "UNKNOWN",
-    "consequence": "Not specified",
-    "action_required": "Not specified",
     "action_items": [],
+    "consequence": "Not specified in policy.",
 }
 
 SYSTEM_PROMPT_PATH = Path(__file__).resolve().parents[1] / "prompts" / "system_prompt.txt"
@@ -63,14 +62,6 @@ class NavigateLabsLLMService:
             raise ModelConfigurationError(f"Model '{self.model_name}' is not available")
 
     def _build_messages(self, evidence: str, question: str) -> list[dict[str, str]]:
-
-        system_prompt = (
-            "You are a policy response adapter. "
-            "Return JSON only with keys: answer, risk_level,consequence,action_required, action_items. "
-            "Use only the provided evidence. "
-            "Do not include markdown or commentary."
-        )
-
         user_prompt = (
             f"Question:\n{question}\n\n"
             f"Retrieved Evidence:\n{evidence}\n\n"
@@ -99,8 +90,7 @@ class NavigateLabsLLMService:
         if not isinstance(parsed, dict):
             raise ValueError("Model response must be a JSON object")
 
-        for key in ("answer", "risk_level","consequence",
-    "action_required", "action_items"):
+        for key in ("answer", "risk_level", "action_items", "consequence"):
             if key not in parsed:
                 raise ValueError(f"Missing required key: {key}")
 
@@ -111,7 +101,6 @@ class NavigateLabsLLMService:
             "answer": parsed["answer"],
             "risk_level": parsed["risk_level"],
             "consequence": parsed["consequence"],
-            "action_required": parsed["action_required"],
             "action_items": parsed["action_items"],
         }
 
@@ -136,3 +125,22 @@ def validate_model() -> None:
 
 def generate_structured_response(evidence: str, question: str) -> dict[str, Any]:
     return _get_service().generate_structured_response(evidence=evidence, question=question)
+
+
+def generate_text_response(evidence: str, question: str, system_prompt: str) -> str:
+    """Generate a freeform text response using a custom system prompt.
+
+    This uses the existing NavigateLabs client and is a thin wrapper so
+    higher-level services can load prompts from files and pass them in.
+    """
+    service = _get_service()
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Question:\n{question}\n\nRetrieved Evidence:\n{evidence}\n\n"},
+    ]
+
+    response = service.client.chat.completions.create(model=service.model_name, messages=messages, temperature=0)
+    content = response.choices[0].message.content
+    if not content:
+        raise ValueError("Empty response from model")
+    return content

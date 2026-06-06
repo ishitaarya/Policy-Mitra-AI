@@ -41,6 +41,7 @@ OUTPUT FORMAT
 "action_items": [
 "string"
 ]
+"consequence": "string",
 }
 
 FALLBACK JSON
@@ -52,6 +53,8 @@ If evidence does not contain the answer, return exactly:
 "risk_level": "UNKNOWN",
 "action_items": []
 }
+
+Add `consequence` with the value: "Not specified in policy."
 
 GOOD EXAMPLE
 
@@ -72,6 +75,7 @@ Output:
 "action_items": [
 "Maintain at least 75% attendance"
 ]
+"consequence": "May be debarred from examinations."
 }
 
 BAD EXAMPLE
