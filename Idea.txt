@@ -1,0 +1,409 @@
+# PROJECT CONTEXT
+
+You are building the backend for an AI hackathon project.
+
+Do not think of this as a chatbot.
+
+This is an AI-powered workflow system.
+
+The judges explicitly want:
+
+* A specific user persona
+* A multi-step workflow
+* A useful output
+
+Simple chat interfaces with LLM responses are not sufficient.
+
+---
+
+# PROJECT NAME
+
+Policy Mitra AI
+
+---
+
+# PROBLEM BEING SOLVED
+
+College students often receive:
+
+* Academic handbooks
+* Attendance policies
+* Hostel regulations
+* Examination rules
+* Scholarship guidelines
+* Disciplinary policies
+
+These documents are:
+
+* Long
+* Complex
+* Written in formal English
+* Difficult for freshers to understand
+
+Students often ask seniors for help because they cannot quickly understand:
+
+* What a rule means
+* What happens if they violate it
+* What action they need to take
+
+The current process is slow and confusing.
+
+---
+
+# TARGET USER
+
+Primary Persona:
+
+First-Year College Student
+
+Characteristics:
+
+* New to college
+* Unfamiliar with institutional policies
+* Comfortable using Hindi-English mixed language
+* Wants quick actionable answers
+* Often asks questions in informal language
+
+Examples:
+
+"Attendance short hai toh kya hoga?"
+
+"Medical leave ka scene kya hai?"
+
+"Hostel late entry pe fine lagta hai kya?"
+
+"Back lagne se bachne ke rules kya hain?"
+
+---
+
+# CORE PRODUCT IDEA
+
+The system should convert complex policy documents into:
+
+1. Easy Hinglish explanations
+2. Risk assessment
+3. Action recommendations
+4. Evidence-backed answers
+
+The system must not simply answer.
+
+It must guide.
+
+---
+
+# USER WORKFLOW
+
+Step 1
+
+Student uploads policy document.
+
+Examples:
+
+* Attendance policy
+* Hostel handbook
+* Academic rulebook
+
+---
+
+Step 2
+
+System processes document.
+
+Process:
+
+PDF
+↓
+Text Extraction
+↓
+Chunking
+↓
+Embedding Generation
+↓
+Vector Storage
+
+---
+
+Step 3
+
+Student asks question.
+
+Examples:
+
+"Attendance short ka scene batao"
+
+"Medical leave kitne din mein submit karna hota hai?"
+
+---
+
+Step 4
+
+System retrieves evidence.
+
+Workflow:
+
+Question
+↓
+Similarity Search
+↓
+Relevant Chunks
+↓
+Context Assembly
+
+---
+
+Step 5
+
+LLM generates structured analysis.
+
+NOT just a response.
+
+Generate:
+
+* Explanation
+* Risk
+* Action Items
+* Sources
+
+---
+
+Step 6
+
+Return structured result.
+
+---
+
+# REQUIRED OUTPUT FORMAT
+
+Every answer should produce:
+
+{
+"answer": "...",
+
+"risk_level": "LOW",
+
+"confidence": 92,
+
+"action_items": [],
+
+"sources": []
+}
+
+---
+
+# ANSWER COMPONENTS
+
+PART 1
+
+Explanation
+
+Convert formal policy language into easy Hinglish.
+
+Example:
+
+Policy:
+
+"Students must maintain a minimum attendance of 75%."
+
+Response:
+
+"Bhai minimum 75% attendance maintain karna compulsory hai."
+
+---
+
+PART 2
+
+Risk Assessment
+
+Determine severity from policy evidence.
+
+Values:
+
+LOW
+MEDIUM
+HIGH
+UNKNOWN
+
+Examples:
+
+LOW
+
+Missing one administrative form.
+
+MEDIUM
+
+Hostel rule violation.
+
+HIGH
+
+Exam debarment.
+
+UNKNOWN
+
+Insufficient evidence.
+
+---
+
+PART 3
+
+Action Checklist
+
+Extract exact actions from policy.
+
+Examples:
+
+[
+"Submit medical certificate",
+"Meet academic coordinator",
+"Apply within 3 working days"
+]
+
+Only use evidence found in document.
+
+---
+
+PART 4
+
+Source Evidence
+
+Every answer must include supporting text.
+
+Example:
+
+{
+"page": 7,
+"excerpt": "Students must maintain minimum attendance of 75%."
+}
+
+---
+
+# ANTI-HALLUCINATION POLICY
+
+This is the most important requirement.
+
+The system is NOT allowed to answer from general knowledge.
+
+Only answer from retrieved context.
+
+If evidence is unavailable:
+
+Return:
+
+{
+"answer": "Bhai ye policy document mein nahi mila.",
+"risk_level": "UNKNOWN",
+"confidence": 0,
+"action_items": [],
+"sources": []
+}
+
+Never guess.
+
+Never invent rules.
+
+Never infer college policies.
+
+Never use external knowledge.
+
+---
+
+# MULTILINGUAL BEHAVIOR
+
+Input language may be:
+
+* English
+* Hindi
+* Hinglish
+
+Examples:
+
+"attendance issue"
+
+"meri attendance kam hai"
+
+"attendance short ka scene"
+
+All should work.
+
+---
+
+# RESPONSE STYLE
+
+Tone:
+
+Friendly Senior Student
+
+Not:
+
+* Robotic
+* Corporate
+* Legal
+
+Good:
+
+"Bhai attendance thodi risky zone mein hai."
+
+Good:
+
+"Scene ye hai ki policy ke according..."
+
+Bad:
+
+"As per institutional compliance requirements..."
+
+---
+
+# WHAT MAKES THIS PROJECT DIFFERENT
+
+This is NOT:
+
+PDF + Chatbot
+
+This IS:
+
+PDF
+↓
+Retrieval
+↓
+Evidence Verification
+↓
+Risk Analysis
+↓
+Action Extraction
+↓
+Hinglish Explanation
+↓
+Structured Output
+
+The workflow itself is the product.
+
+---
+
+# SUCCESS CRITERIA
+
+A successful response must:
+
+✓ Use retrieved evidence
+
+✓ Explain policy in Hinglish
+
+✓ Produce risk score
+
+✓ Produce action checklist
+
+✓ Cite source excerpts
+
+✓ Refuse unsupported questions
+
+✓ Never hallucinate
+
+---
+
+# FUTURE FEATURES (DO NOT BUILD UNLESS ASKED)
+
+* Voice input
+* Complaint generation
+* Policy comparison
+* Student profile personalization
+* Multi-document search
+
+Focus only on MVP backend.
