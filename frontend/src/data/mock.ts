@@ -43,6 +43,7 @@ export const initialMessages: ChatMessage[] = [
     actions: attendanceBundle.actions,
     source: attendanceBundle.source,
     sources: attendanceBundle.sources,
+    relatedUserQuery: 'Attendance short ka scene? Mere 68% hai abhi.',
   },
 ]
 

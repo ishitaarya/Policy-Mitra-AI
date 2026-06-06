@@ -10,6 +10,8 @@ import { AICommandCenter } from '@/components/AICommandCenter'
 import { UserAvatarMenu } from '@/components/layout/UserAvatarMenu'
 import { WelcomeCard } from '@/components/welcome/WelcomeCard'
 import { Button } from '@/components/ui/button'
+import { ComplaintGeneratorDrawer } from '@/components/ComplaintGeneratorDrawer'
+import { ComplaintDrawerProvider } from '@/context/ComplaintDrawerContext'
 import { useAuth } from '@/context/AuthContext'
 import { hasPendingDemo } from '@/lib/demoMode'
 
@@ -24,6 +26,7 @@ export function AppPage() {
   }, [isAuthenticated, quickDemoLogin])
 
   return (
+    <ComplaintDrawerProvider>
     <div className="relative flex h-svh flex-col overflow-hidden">
       <GradientBackground />
 
@@ -57,6 +60,8 @@ export function AppPage() {
       </div>
 
       <AICommandCenter active={workflowActive} />
+      <ComplaintGeneratorDrawer />
     </div>
+    </ComplaintDrawerProvider>
   )
 }

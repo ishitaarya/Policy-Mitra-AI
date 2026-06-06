@@ -6,8 +6,10 @@ import { QuickPromptChips } from '@/components/QuickPromptChips'
 import { AIThinkingWorkflow } from '@/components/AIThinkingWorkflow'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useComplaintDrawer } from '@/context/ComplaintDrawerContext'
 import { initialMessages, suggestedPrompts } from '@/data/mock'
 import { getResponseBundle } from '@/data/policyImpact'
+import { isComplaintIssue } from '@/lib/complaintGenerator'
 import { consumeDemoMessages } from '@/lib/demoMode'
 import type { ChatMessage } from '@/types'
 
@@ -22,6 +24,7 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ onWorkflowChange }: ChatInterfaceProps) {
+  const { openDrawer } = useComplaintDrawer()
   const [{ messages: initial, hasInteracted: initialInteracted }] = useState(resolveInitialState)
   const [messages, setMessages] = useState<ChatMessage[]>(initial)
   const [input, setInput] = useState('')
@@ -35,25 +38,44 @@ export function ChatInterface({ onWorkflowChange }: ChatInterfaceProps) {
   }, [messages, isThinking])
 
   const deliverResponse = useCallback(() => {
-    if (pendingResponseRef.current) {
-      setMessages((prev) => [...prev, pendingResponseRef.current!])
+    const response = pendingResponseRef.current
+    if (response) {
+      setMessages((prev) => [...prev, response])
+
+      const userQuery = response.relatedUserQuery
+      if (userQuery && isComplaintIssue(userQuery)) {
+        window.setTimeout(() => {
+          openDrawer({
+            userQuery,
+            context: {
+              policyCategory: response.policyCategory,
+              assistantSummary: response.content,
+              riskLevel: response.riskLevel,
+              department: response.impact?.department,
+            },
+          })
+        }, 500)
+      }
+
       pendingResponseRef.current = null
     }
     setIsThinking(false)
     onWorkflowChange?.(false)
-  }, [onWorkflowChange])
+  }, [onWorkflowChange, openDrawer])
 
   const sendMessage = (text: string) => {
     if (!text.trim() || isThinking) return
 
+    const trimmed = text.trim()
+
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: text.trim(),
+      content: trimmed,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }
 
-    const bundle = getResponseBundle(text.trim())
+    const bundle = getResponseBundle(trimmed)
 
     pendingResponseRef.current = {
       id: (Date.now() + 1).toString(),
@@ -68,6 +90,7 @@ export function ChatInterface({ onWorkflowChange }: ChatInterfaceProps) {
       source: bundle.source,
       sources: bundle.sources,
       actions: bundle.actions,
+      relatedUserQuery: trimmed,
     }
 
     setMessages((prev) => [...prev, userMsg])
@@ -108,7 +131,16 @@ export function ChatInterface({ onWorkflowChange }: ChatInterfaceProps) {
           )}
 
           {messages.map((msg, i) => (
-            <MessageCard key={msg.id} message={msg} index={i} />
+            <MessageCard
+              key={msg.id}
+              message={msg}
+              index={i}
+              userQuery={
+                msg.role === 'assistant'
+                  ? msg.relatedUserQuery ?? messages[i - 1]?.content
+                  : undefined
+              }
+            />
           ))}
 
           <AnimatePresence>

@@ -42,6 +42,7 @@ function buildMessages(
       id: 'demo-assistant',
       role: 'assistant',
       timestamp: 'Just now',
+      relatedUserQuery: userContent,
       ...assistant,
     },
   ]
