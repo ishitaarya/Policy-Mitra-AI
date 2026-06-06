@@ -2,17 +2,21 @@ from __future__ import annotations
 
 import json
 import os
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 from openai import OpenAI
 
-from app.exceptions import ModelConfigurationError
+from app.exceptions import ModelConfigurationError, PromptConfigurationError
 
 EMPTY_EVIDENCE_RESPONSE = {
     "answer": "Bhai ye policy document mein nahi mila.",
     "risk_level": "UNKNOWN",
     "action_items": [],
 }
+
+SYSTEM_PROMPT_PATH = Path(__file__).resolve().parents[1] / "prompts" / "system_prompt.txt"
 
 
 def _read_env(name: str, fallback: str | None = None) -> str:
@@ -26,6 +30,14 @@ def _read_env(name: str, fallback: str | None = None) -> str:
     return ""
 
 
+@lru_cache(maxsize=1)
+def load_system_prompt() -> str:
+    try:
+        return SYSTEM_PROMPT_PATH.read_text(encoding="utf-8").strip()
+    except FileNotFoundError as exc:
+        raise PromptConfigurationError(f"Missing system prompt file: {SYSTEM_PROMPT_PATH}") from exc
+
+
 class NavigateLabsLLMService:
     def __init__(self) -> None:
         self.api_key = _read_env("NAVIGATE_API_KEY", "NAVIGATE_LABS_API_KEY")
@@ -36,6 +48,7 @@ class NavigateLabsLLMService:
             raise ModelConfigurationError("Missing Navigate Labs configuration")
 
         self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        self.system_prompt = load_system_prompt()
         self.validate_model()
 
     def list_models(self) -> list[str]:
@@ -48,19 +61,13 @@ class NavigateLabsLLMService:
             raise ModelConfigurationError(f"Model '{self.model_name}' is not available")
 
     def _build_messages(self, evidence: str, question: str) -> list[dict[str, str]]:
-        system_prompt = (
-            "You are a policy response adapter. "
-            "Return JSON only with keys answer, risk_level, action_items. "
-            "Use only the provided evidence and question. "
-            "Do not include markdown or commentary."
-        )
         user_prompt = (
             f"Question:\n{question}\n\n"
             f"Retrieved Evidence:\n{evidence}\n\n"
             "Return JSON only."
         )
         return [
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": user_prompt},
         ]
 
