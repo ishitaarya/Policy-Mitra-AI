@@ -24,6 +24,12 @@ from app.models.schemas import (
 from app.services.complaint_service import generate_complaint
 from app.services.eli5_service import explain_simple
 from app.services.policy_workflow import NO_MATCH_RESPONSE, answer_policy_question
+from app.services.retrieval_service import retrieve_context
+
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
 
 logger = logging.getLogger(__name__)
 
@@ -62,34 +68,34 @@ async def upload_policy(file: UploadFile = File(...)) -> UploadPolicyResponse:
     document_id = compute_document_id(destination)
     logger.info("upload | document_id=%s | file=%s", document_id, filename)
 
-    pages = load_pdf(destination)
-    logger.info("upload | document_id=%s | pages_extracted=%d", document_id, len(pages))
-    for page in pages:
-        logger.debug(
-            "upload | page=%s | chars=%d | preview=%.100s",
-            page["page"],
-            len(str(page["text"])),
-            str(page["text"]),
-        )
+    loader = PyPDFLoader(str(destination))
+    documents = loader.load()
 
-    chunks = create_chunks(pages, document_id=document_id)
-    logger.info("upload | document_id=%s | chunks_created=%d", document_id, len(chunks))
+    for doc in documents:
+        doc.metadata["document_id"] = document_id
 
-    embeddings = generate_embeddings([chunk.text for chunk in chunks])
-    logger.info(
-        "upload | document_id=%s | embeddings_count=%d | embedding_dim=%d",
-        document_id,
-        len(embeddings),
-        len(embeddings[0]) if embeddings else 0,
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=800,
+        chunk_overlap=100
     )
 
-    # BUG FIX: store in chroma_dir (./vectorstore), not uploads_dir (./data/pdfs)
-    stats = store_chunks(chunks, embeddings, persist_dir=chroma_dir)
+    chunks = splitter.split_documents(documents)
+
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
+
+    Chroma.from_documents(
+        documents=chunks,
+        embedding=embeddings,
+        persist_directory=str(chroma_dir),
+        collection_name="policy_documents"
+    )
 
     return UploadPolicyResponse(
-        document_id=stats.document_id,
-        pages=stats.pages,
-        chunks_created=stats.chunks_created,
+        document_id=document_id,
+        pages=len(documents),
+        chunks_created=len(chunks),
         status="indexed",
     )
 
@@ -147,6 +153,21 @@ async def debug_chunks(document_id: str) -> dict[str, object]:
             }
             for c in chunks
         ],
+    }
+
+
+@router.get("/debug/retrieval")
+async def debug_retrieval(payload: AskRequest) -> dict[str, object]:
+    chroma_dir = _chroma_dir()
+    retrieved_chunks = retrieve_context(
+        document_id=payload.document_id,
+        question=payload.question,
+        persist_dir=chroma_dir
+    )
+    
+    return {
+        "retrieved_chunks": [c["text"] for c in retrieved_chunks],
+        "scores": [c["score"] for c in retrieved_chunks]
     }
 
 

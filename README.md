@@ -1,277 +1,717 @@
-# 🎓 PolicyPal AI
-### AI-Powered Hinglish College Policy Explainer
+# 🚀 PolicyMitra AI
 
-> Making complex college policies understandable for every student through multilingual AI.
+<div align="center">
+
+<img src="assets/banner.gif" alt="PolicyMitra AI Banner" width="100%"/>
+
+<br/>
+
+# 🧠 PolicyMitra AI
+
+### *Your AI Senior for Understanding College Policies*
+
+<p align="center">
+An AI-powered RAG platform that transforms complex institutional regulations into understandable, trustworthy, and actionable guidance.
+</p>
+
+<br/>
+
+<img src="https://img.shields.io/badge/AI%20for%20Impact-Hackathon-blue?style=for-the-badge" />
+<img src="https://img.shields.io/badge/RAG-Powered-purple?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Student-First-success?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Open%20Source-Love-red?style=for-the-badge" />
+
+<br/><br/>
+
+<a href="#-live-demo">
+  <img src="https://img.shields.io/badge/🚀_Demo-000000?style=for-the-badge" />
+</a>
+
+<a href="#-system-architecture">
+  <img src="https://img.shields.io/badge/🏗️_Architecture-1E90FF?style=for-the-badge" />
+</a>
+
+<a href="#-api-reference">
+  <img src="https://img.shields.io/badge/📚_API-7B68EE?style=for-the-badge" />
+</a>
+
+<a href="#-deployment">
+  <img src="https://img.shields.io/badge/☁️_Deploy-228B22?style=for-the-badge" />
+</a>
+
+</div>
 
 ---
 
-## 🚀 Overview
+<div align="center">
 
-PolicyPal AI is an intelligent assistant designed to help students understand complex college policies in simple Hinglish.
+## ✨ Transforming Policy Confusion into Student Clarity
 
-Most students struggle to read lengthy academic regulations, attendance policies, examination rules, scholarship guidelines, hostel regulations, and grievance procedures because they are written in formal institutional language.
+</div>
 
-PolicyPal converts these documents into:
+Students often struggle with:
 
-- Simple Hinglish explanations
-- Step-by-step guidance
-- Personalized answers
-- Voice-enabled conversations
-- Structured summaries
+* Attendance regulations
+* Hostel rules
+* Examination policies
+* Scholarship eligibility
+* Academic grievances
+* Administrative procedures
+* Disciplinary guidelines
 
-The platform ensures students receive information only from official college documents, reducing misinformation and confusion.
+PolicyMitra AI acts as an intelligent policy navigator that allows students to upload official policy documents and ask questions in natural language.
 
----
+Instead of searching through hundreds of pages, students receive:
 
-## ❗ Problem Statement
+✅ Accurate Answers
 
-Students often:
+✅ Relevant Sources
 
-- Cannot understand legal or formal policy language.
-- Need quick answers instead of reading long PDFs.
-- Prefer code-mixed communication (Hindi + English).
-- Miss important rules due to document complexity.
+✅ Student-Friendly Explanations
 
-This leads to:
+✅ Actionable Guidance
 
-- Attendance confusion
-- Exam eligibility misunderstandings
-- Scholarship misinformation
-- Hostel and grievance process issues
+✅ Structured Complaint Drafts
 
 ---
 
-## 💡 Solution
+# 🏆 Hackathon Alignment
 
-PolicyPal AI transforms official college documents into an interactive multilingual assistant.
+Built specifically around the **AI for Campus Operations** and **AI for Indian Multilingual Users** challenge themes, combining:
 
-### Workflow
+* AI Campus Policy Navigator
+* AI Grievance Assistant
+* Hinglish Policy Explainer
+* Multi-step RAG Workflow
+* Actionable Student Outputs
 
-```text
-Student Query
-      ↓
-Language Detection
-      ↓
-Document Retrieval (RAG)
-      ↓
-Relevant Policy Extraction
-      ↓
-LLM Simplification Engine
-      ↓
-Hinglish Explanation
-      ↓
-Actionable Steps + References
+This directly addresses the hackathon's campus policy navigation and multilingual policy explanation challenges.
+
+---
+
+# 🛡️ Badges
+
+<div align="center">
+
+![Version](https://img.shields.io/badge/version-v1.0-blue)
+![Build](https://img.shields.io/github/actions/workflow/status/your-org/policymitra/main.yml)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/Python-3.11-yellow)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688)
+![React](https://img.shields.io/badge/React-61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6)
+![LangChain](https://img.shields.io/badge/LangChain-121212)
+![ChromaDB](https://img.shields.io/badge/ChromaDB-purple)
+![Docker](https://img.shields.io/badge/Docker-2496ED)
+![Open Source](https://img.shields.io/badge/Open%20Source-Yes-success)
+![Stars](https://img.shields.io/github/stars/your-org/policymitra?style=social)
+
+</div>
+
+---
+
+# 🌟 Core Features
+
+<div align="center">
+
+| Feature                  | Description                                   |
+| ------------------------ | --------------------------------------------- |
+| 🧭 AI Policy Navigator   | Ask questions directly from uploaded policies |
+| 📄 Policy Summarization  | Generate concise summaries                    |
+| 🧒 ELI5 Mode             | Explain regulations in simple language        |
+| 📋 Action Plan Generator | Convert policies into actionable steps        |
+| ⚖️ Grievance Assistant   | Draft structured complaints                   |
+| 🔎 Semantic Search       | Vector-powered retrieval                      |
+| 📚 Source Grounding      | Every answer backed by policy text            |
+| 🌐 Multilingual Support  | English + Hinglish understanding              |
+| 🔐 Secure Isolation      | Document-specific retrieval                   |
+| ⚡ Fast Responses         | Optimized RAG pipeline                        |
+
+</div>
+
+---
+
+# 🎬 Product Walkthrough
+
+---
+
+## 📂 Policy Upload
+
+<div align="center">
+
+<img src="assets/demos/upload.gif" width="100%"/>
+
+</div>
+
+---
+
+## 💬 Policy Question Answering
+
+<div align="center">
+
+<img src="assets/demos/qa.gif" width="100%"/>
+
+</div>
+
+---
+
+## 🧒 ELI5 Mode
+
+<div align="center">
+
+<img src="assets/demos/eli5.gif" width="100%"/>
+
+</div>
+
+---
+
+## 📋 Action Plan Generator
+
+<div align="center">
+
+<img src="assets/demos/action-plan.gif" width="100%"/>
+
+</div>
+
+---
+
+## ⚖️ Grievance Generator
+
+<div align="center">
+
+<img src="assets/demos/grievance.gif" width="100%"/>
+
+</div>
+
+---
+
+## 📊 Admin Dashboard
+
+<div align="center">
+
+<img src="assets/demos/dashboard.gif" width="100%"/>
+
+</div>
+
+---
+
+# 🏗️ System Architecture
+
+## High-Level Architecture
+
+```mermaid
+flowchart LR
+
+A[Student User]
+--> B[React Frontend]
+
+B --> C[API Gateway]
+
+C --> D[FastAPI Backend]
+
+D --> E[RAG Pipeline]
+
+E --> F[Chunking]
+
+F --> G[Embeddings]
+
+G --> H[ChromaDB]
+
+E --> I[Retriever]
+
+I --> J[LLM]
+
+J --> K[Grounded Response]
+
+K --> B
 ```
 
-### Example
+---
 
-**Student Query**
+## C4 Container Diagram
 
-```text
-Meri attendance 70% hai,
-kya main semester exam de sakta hu?
-```
+```mermaid
+flowchart TB
 
-**PolicyPal Response**
+User --> Frontend
 
-```text
-College policy ke according minimum
-75% attendance required hai.
+subgraph Frontend
+React
+TypeScript
+Tailwind
+end
 
-Aapki attendance 70% hai,
-isliye aap short attendance category
-mein aa sakte ho.
+Frontend --> Backend
 
-Recommended Action:
-• HOD se permission request karein
-• Medical documents submit karein (if applicable)
+subgraph Backend
+FastAPI
+LangChain
+end
 
-Source:
-Attendance Policy Section 4.2
+Backend --> EmbeddingService
+
+subgraph EmbeddingService
+MiniLM
+SentenceTransformers
+end
+
+EmbeddingService --> ChromaDB
+
+Backend --> LLMs
+
+subgraph LLMs
+OpenAI
+Groq
+Gemini
+Llama
+end
 ```
 
 ---
 
-## ✨ Key Features
+## Sequence Diagram
 
-### 📄 Policy Understanding
+```mermaid
+sequenceDiagram
 
-- Upload official college PDFs
-- Extract policy content
-- Semantic search over documents
+participant U as User
+participant FE as Frontend
+participant API as FastAPI
+participant EMB as Embeddings
+participant DB as ChromaDB
+participant LLM as LLM
 
-### 🌐 Hinglish Explanations
+U->>FE: Upload PDF
 
-- Converts legal language into student-friendly language
-- Supports Hindi-English mixed conversations
+FE->>API: POST /upload-policy
 
-### 🎙 Voice Support
+API->>API: Extract Text
 
-- Speech-to-text query input
-- Audio response generation
+API->>API: Chunking
 
-### 🔍 Source Verification
+API->>EMB: Generate Embeddings
 
-- Every answer is grounded in uploaded documents
-- No hallucinated responses
+EMB->>DB: Store Vectors
 
-### 📊 Policy Summaries
+DB-->>API: Stored
 
-Generate:
+U->>FE: Ask Question
 
-- Attendance summaries
-- Hostel rules summaries
-- Scholarship eligibility summaries
-- Examination guidelines
+FE->>API: POST /ask
 
-### 🤖 Personalized Assistance
+API->>DB: Semantic Search
 
-Students can ask:
+DB-->>API: Relevant Chunks
 
-```text
-Can I apply for revaluation?
-```
+API->>LLM: Context + Query
 
-```text
-Mujhe hostel room change karna hai.
-```
+LLM-->>API: Grounded Answer
 
-```text
-Scholarship ke liye eligibility kya hai?
+API-->>FE: Response
 ```
 
 ---
 
-## 👤 User Persona
+## Authentication Flow
 
-### Primary User
+```mermaid
+flowchart LR
 
-**College Student**
+User
 
-Characteristics:
+--> OAuth
 
-- Reads Hinglish comfortably
-- Limited time to read long PDFs
-- Needs quick and accurate answers
+OAuth
 
----
+--> JWT
 
-## 🏗 System Architecture
+JWT
 
-```text
-Frontend (Next.js)
-       │
-       ▼
-API Layer (FastAPI)
-       │
-       ▼
-Document Processing
-(PDF Parsing)
-       │
-       ▼
-Vector Database
-(Pinecone/Chroma)
-       │
-       ▼
-Embedding Model
-       │
-       ▼
-LLM Engine
-(Gemini/OpenAI)
-       │
-       ▼
-Response Generator
-       │
-       ▼
-Student Dashboard
+--> ProtectedAPI
+
+ProtectedAPI
+
+--> FastAPI
+
+FastAPI
+
+--> Database
 ```
 
 ---
 
-## 🛠 Tech Stack
+## ER Diagram
 
-### Frontend
+```mermaid
+erDiagram
 
-- Next.js 15
-- React
-- TypeScript
-- Tailwind CSS
-- ShadCN UI
-- Framer Motion
+USERS ||--o{ DOCUMENTS : uploads
+DOCUMENTS ||--o{ CHUNKS : contains
+USERS ||--o{ QUERIES : asks
+QUERIES ||--o{ RESPONSES : receives
 
-### Backend
+USERS {
+string id
+string email
+string role
+}
 
-- FastAPI
-- Python
+DOCUMENTS {
+string id
+string name
+datetime uploaded_at
+}
 
-### AI Stack
+CHUNKS {
+string id
+text content
+vector embedding
+}
 
-- Gemini API
-- LangChain
-- Sentence Transformers
-- RAG Pipeline
+QUERIES {
+string id
+text question
+datetime created_at
+}
 
-### Database
-
-- ChromaDB / Pinecone
-
-### Document Processing
-
-- PyPDF
-- PDFPlumber
-
-### Speech Features
-
-- Whisper
-- Browser Speech API
-
-### Deployment
-
-- Vercel (Frontend)
-- Render / Railway (Backend)
+RESPONSES {
+string id
+text answer
+}
+```
 
 ---
 
-## 📂 Project Structure
+## Deployment Diagram
 
-```bash
-PolicyPal-AI/
+```mermaid
+flowchart LR
+
+Browser
+
+--> Vercel
+
+Vercel
+
+--> Railway
+
+Railway
+
+--> FastAPI
+
+FastAPI
+
+--> ChromaDB
+
+FastAPI
+
+--> LLM Providers
+```
+
+---
+
+## CI/CD Pipeline
+
+```mermaid
+flowchart LR
+
+Developer
+
+--> GitHub
+
+GitHub
+
+--> Actions
+
+Actions
+
+--> Tests
+
+Tests
+
+--> Build
+
+Build
+
+--> Deploy
+
+Deploy
+
+--> Production
+```
+
+---
+
+# 🧠 RAG Pipeline
+
+```mermaid
+flowchart TB
+
+PDF
+
+--> Text Extraction
+
+Text Extraction
+
+--> Chunking
+
+Chunking
+
+--> Embedding Generation
+
+Embedding Generation
+
+--> ChromaDB
+
+Question
+
+--> Retriever
+
+Retriever
+
+--> Relevant Chunks
+
+Relevant Chunks
+
+--> LLM
+
+LLM
+
+--> Grounded Answer
+
+Grounded Answer
+
+--> Student
+```
+
+---
+
+# 📁 Folder Structure
+
+```text
+PolicyMitraAI/
 │
 ├── frontend/
-│   ├── app/
+│   ├── src/
 │   ├── components/
 │   ├── pages/
-│   └── styles/
+│   ├── hooks/
+│   └── assets/
 │
 ├── backend/
-│   ├── api/
-│   ├── rag/
-│   ├── embeddings/
-│   ├── services/
-│   └── utils/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── services/
+│   │   ├── rag/
+│   │   ├── models/
+│   │   └── core/
+│   │
+│   ├── tests/
+│   └── requirements.txt
 │
 ├── docs/
-│   └── sample_policies/
-│
 ├── architecture/
+├── docker/
+├── .github/
+│   └── workflows/
 │
-├── demo/
-│
-└── README.md
+├── screenshots/
+├── README.md
+└── docker-compose.yml
 ```
 
 ---
 
-## ⚙️ Setup Instructions
+# ⚙️ Tech Stack
 
-### Clone Repository
+## Frontend
 
-```bash
-git clone https://github.com/your-team/policypal-ai.git
-cd policypal-ai
+| Technology    | Purpose      |
+| ------------- | ------------ |
+| React         | UI Framework |
+| TypeScript    | Type Safety  |
+| Tailwind CSS  | Styling      |
+| Framer Motion | Animations   |
+| ShadCN UI     | Components   |
+
+---
+
+## Backend
+
+| Technology | Purpose       |
+| ---------- | ------------- |
+| FastAPI    | API Framework |
+| Python     | Core Language |
+
+---
+
+## AI Layer
+
+| Technology   | Purpose         |
+| ------------ | --------------- |
+| LangChain    | Orchestration   |
+| ChromaDB     | Vector Storage  |
+| HuggingFace  | Embeddings      |
+| MiniLM-L6-v2 | Semantic Search |
+
+---
+
+## LLM Providers
+
+| Provider | Usage                |
+| -------- | -------------------- |
+| OpenAI   | GPT Models           |
+| Groq     | Fast Inference       |
+| Gemini   | Multimodal Reasoning |
+| Llama    | Open Source LLM      |
+
+---
+
+# 📡 API Reference
+
+## Upload Policy
+
+| Method | Endpoint         |
+| ------ | ---------------- |
+| POST   | `/upload-policy` |
+
+### Request
+
+```json
+{
+  "file": "policy.pdf"
+}
 ```
 
-### Frontend Setup
+---
+
+## Ask Question
+
+| Method | Endpoint |
+| ------ | -------- |
+| POST   | `/ask`   |
+
+```json
+{
+  "question":"What is attendance requirement?"
+}
+```
+
+---
+
+## Generate Complaint
+
+| Method | Endpoint              |
+| ------ | --------------------- |
+| POST   | `/generate-complaint` |
+
+---
+
+## Explain Simple
+
+| Method | Endpoint          |
+| ------ | ----------------- |
+| POST   | `/explain-simple` |
+
+---
+
+## Health Check
+
+| Method | Endpoint  |
+| ------ | --------- |
+| GET    | `/health` |
+
+---
+
+## Debug Chunks
+
+| Method | Endpoint        |
+| ------ | --------------- |
+| GET    | `/debug/chunks` |
+
+---
+
+# 🔒 Security
+
+<details>
+
+<summary><b>Security Controls</b></summary>
+
+### JWT Authentication
+
+* Secure API access
+* Token expiration
+* Role-based authorization
+
+### Document Isolation
+
+* User-specific document access
+* Namespace segregation
+
+### Prompt Injection Protection
+
+* Input sanitization
+* Context filtering
+* Source validation
+
+### RAG Guardrails
+
+* Grounded-only responses
+* Hallucination reduction
+* Citation enforcement
+
+</details>
+
+---
+
+# ⚡ Performance Metrics
+
+| Metric               | Performance |
+| -------------------- | ----------- |
+| PDF Upload           | < 3 sec     |
+| Chunking             | < 1 sec     |
+| Embedding Generation | < 2 sec     |
+| Vector Search        | < 150 ms    |
+| Retrieval Pipeline   | < 300 ms    |
+| Response Generation  | < 3 sec     |
+| End-to-End Query     | < 4 sec     |
+
+---
+
+# 🗺️ Product Roadmap
+
+```mermaid
+gantt
+title PolicyMitra AI Roadmap
+
+dateFormat YYYY-MM-DD
+
+section Phase 1
+Policy Navigator :done, p1, 2025-06-01, 30d
+
+section Phase 2
+Multilingual Support :active, p2, after p1, 30d
+
+section Phase 3
+Workflow Automation : p3, after p2, 45d
+
+section Phase 4
+Campus Copilot Ecosystem : p4, after p3, 60d
+```
+
+---
+
+# 🚀 Local Setup
+
+```bash
+git clone https://github.com/your-org/policymitra-ai.git
+
+cd policymitra-ai
+```
+
+---
+
+### Frontend
 
 ```bash
 cd frontend
@@ -281,153 +721,112 @@ npm install
 npm run dev
 ```
 
-Runs on:
+---
 
-```text
-http://localhost:3000
-```
-
-### Backend Setup
+### Backend
 
 ```bash
 cd backend
 
 pip install -r requirements.txt
 
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
-Runs on:
+---
+
+### Docker
+
+```bash
+docker-compose up --build
+```
+
+---
+
+# 🤝 Contributing
+
+We welcome contributions from the community.
+
+### Workflow
+
+1. Fork repository
+2. Create feature branch
+3. Commit changes
+4. Push branch
+5. Open Pull Request
+
+### Guidelines
+
+* Follow clean architecture
+* Write tests
+* Maintain documentation
+* Use meaningful commit messages
+* Keep PRs focused and reviewable
+
+---
+
+# 📊 Why PolicyMitra AI?
+
+| Traditional Policy PDFs | PolicyMitra AI                |
+| ----------------------- | ----------------------------- |
+| Hundreds of pages       | Instant answers               |
+| Difficult language      | Student-friendly explanations |
+| Manual searching        | Semantic retrieval            |
+| No guidance             | Actionable next steps         |
+| No multilingual support | Hinglish understanding        |
+| No context              | Source-grounded responses     |
+
+---
+
+# 📜 License
+
+Licensed under the MIT License.
 
 ```text
-http://localhost:8000
-```
+MIT License
 
-### Environment Variables
+Copyright (c) 2026 PolicyMitra AI
 
-Create a `.env` file:
-
-```env
-GEMINI_API_KEY=your_api_key
-
-OPENAI_API_KEY=your_api_key
-
-VECTOR_DB_URL=your_db_url
+Permission is hereby granted, free of charge,
+to any person obtaining a copy of this software...
 ```
 
 ---
 
-## 🎯 Demo Instructions
+<div align="center">
 
-### Step 1
+# 🌟 PolicyMitra AI
 
-Upload an official college policy PDF.
+### Your AI Senior for Understanding College Policies
 
-Examples:
+<br/>
 
-- Attendance Policy
-- Examination Rules
-- Hostel Regulations
+Built for **AI for Impact Hackathon**
 
-### Step 2
+<br/>
 
-Ask questions in:
+⚡ FastAPI
+⚡ React
+⚡ LangChain
+⚡ ChromaDB
+⚡ Generative AI
 
-- English
-- Hindi
-- Hinglish
+<br/>
 
-Examples:
+<img src="https://img.shields.io/badge/Built%20With-AI-blue?style=for-the-badge"/>
+<img src="https://img.shields.io/badge/Open%20Source-Love-red?style=for-the-badge"/>
+<img src="https://img.shields.io/badge/Student-Impact-success?style=for-the-badge"/>
 
-```text
-Attendance short ho gayi toh kya hoga?
-```
+<br/><br/>
 
-```text
-Can I apply for scholarship after first year?
-```
+[🌐 Website](#) •
+[📚 Docs](#) •
+[🎥 Demo](#) •
+[💬 Discord](#) •
+[🐦 Twitter](#)
 
-### Step 3
+<br/>
 
-Receive:
+### ⭐ If this project helps students, consider starring the repository.
 
-- Simplified explanation
-- Actionable steps
-- Source references
-
----
-
-## 🤖 How AI Is Used
-
-### 1. Language Understanding
-
-Detects:
-
-- English
-- Hindi
-- Hinglish
-
-### 2. Retrieval-Augmented Generation (RAG)
-
-- Searches official policy documents
-- Retrieves relevant sections
-- Prevents hallucinations
-
-### 3. Simplification Engine
-
-Converts complex institutional language into student-friendly Hinglish.
-
-### 4. Conversational Assistant
-
-Maintains context across multiple questions.
-
-### 5. Speech Processing
-
-- Voice input
-- Voice output
-
----
-
-## 📈 Future Enhancements
-
-- Support for all Indian regional languages
-- WhatsApp integration
-- Student grievance filing
-- Automatic form filling
-- College ERP integration
-- Mobile application
-
----
-
-## 🏆 Impact
-
-PolicyPal AI improves:
-
-- Student awareness
-- Policy accessibility
-- Administrative efficiency
-- Multilingual inclusion
-
-By making official policies understandable for every student, PolicyPal bridges the gap between institutions and learners.
-
----
-
-## 👥 Team
-
-**Team Name:** [Your Team Name]
-
-**Hackathon:** AI for Impact 2026
-
-**Theme:** AI for Indian Multilingual Users
-
-**Project:** PolicyPal AI – Hinglish College Policy Explainer
-
----
-
-## 📜 License
-
-This project was developed as part of the AI for Impact Hackathon.
-
----
-
-### "Understand Policies. Not Legal Jargon." 🎓🤖
+</div>

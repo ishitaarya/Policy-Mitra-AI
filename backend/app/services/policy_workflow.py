@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from app.services import llm_service
-from app.services.retrieval_service import build_context, retrieve_relevant_chunks
+from app.services.retrieval_service import build_context, retrieve_context
 
 logger = logging.getLogger(__name__)
 
@@ -64,28 +64,26 @@ def answer_policy_question(
         persist_dir,
     )
 
-    retrieval = retrieve_relevant_chunks(
-        query=question,
+    chunks = retrieve_context(
         document_id=document_id,
-        persist_dir=persist_dir,
-        top_k=top_k,
+        question=question,
+        persist_dir=persist_dir
     )
 
-    chunks = retrieval["chunks"]
     logger.info(
-        "workflow | document_id=%s | chunks_retrieved=%d | top_score=%s",
+        "workflow | document_id=%s | chunks_retrieved=%d",
         document_id,
         len(chunks),
-        retrieval.get("top_score"),
     )
 
     if not chunks:
         logger.warning("workflow | document_id=%s | NO chunks found → returning NO_MATCH", document_id)
         return dict(NO_MATCH_RESPONSE)
 
-    top_score = max(float(chunk["score"]) for chunk in chunks)
+    top_score = max((float(chunk["score"]) for chunk in chunks), default=0.0)
     confidence = _calculate_numeric_confidence(top_score)
 
+    # Note: similarity score could be 0 if distance >= 1
     if top_score <= 0.0:
         logger.warning(
             "workflow | document_id=%s | top_score=%.4f ≤ 0 → returning NO_MATCH",
@@ -115,6 +113,6 @@ def answer_policy_question(
         "metadata": {
             "document_id": document_id,
             "chunks_used": len(chunks),
-            "top_score": float(retrieval.get("top_score", round(top_score, 2))),
+            "top_score": round(top_score, 2),
         },
     }

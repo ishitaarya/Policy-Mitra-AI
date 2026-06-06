@@ -1,119 +1,54 @@
-from __future__ import annotations
-
 import logging
-from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
-from app.database.chroma_client import _get_client, _get_collection
-from app.ingestion.embeddings import generate_embeddings
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
 
 logger = logging.getLogger(__name__)
 
-
-@dataclass(frozen=True)
-class RetrievedChunk:
-    document_id: str
-    page: int
-    chunk_id: str
-    text: str
-    score: float
-
-
-def _distance_to_score(distance: float) -> float:
-    """Convert ChromaDB cosine distance [0, 2] to similarity score [0, 1]."""
-    return max(0.0, min(1.0, 1.0 - distance))
-
-
-def calculate_confidence(top_score: float) -> str:
-    if top_score >= 0.85:
-        return "HIGH"
-    if top_score >= 0.70:
-        return "MEDIUM"
-    if top_score > 0.0:
-        return "LOW"
-    return "LOW"
-
-
-def retrieve_relevant_chunks(
-    query: str,
-    document_id: str,
-    persist_dir: str | Path | None = None,
-    top_k: int = 5,
-) -> dict[str, object]:
-    logger.info(
-        "retrieval | document_id=%s | persist_dir=%s | query=%.200s",
-        document_id,
-        persist_dir,
-        query,
+def retrieve_context(document_id: str, question: str, persist_dir: str | Path | None = None) -> list[dict[str, Any]]:
+    directory = str(persist_dir or "./vectorstore")
+    
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
-
-    client = _get_client(persist_dir)
-    collection = _get_collection(client)
-
-    total_in_collection = collection.count()
-    logger.info("retrieval | total_docs_in_collection=%d", total_in_collection)
-
-    query_embedding = generate_embeddings([query])[0]
-
-    result = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=top_k,
-        where={"document_id": document_id},
-        include=["documents", "metadatas", "distances"],
+    
+    vectordb = Chroma(
+        persist_directory=directory,
+        embedding_function=embeddings,
+        collection_name="policy_documents"
     )
-
-    documents = result.get("documents", [[]])[0]
-    metadatas = result.get("metadatas", [[]])[0]
-    distances = result.get("distances", [[]])[0]
-
-    logger.info(
-        "retrieval | document_id=%s | raw_matches=%d | raw_distances=%s",
-        document_id,
-        len(documents),
-        [round(float(d), 4) for d in distances],
+    
+    results = vectordb.similarity_search_with_score(
+        query=question,
+        k=5,
+        filter={"document_id": document_id}
     )
+    
+    retrieved_chunks = []
+    
+    for doc, distance in results:
+        # Distance to similarity
+        score = max(0.0, min(1.0, 1.0 - distance))
+        chunk_data = {
+            "text": doc.page_content,
+            "score": score,
+            "page": doc.metadata.get("page", 0)
+        }
+        retrieved_chunks.append(chunk_data)
+        
+    logger.info("Question: %s", question)
+    logger.info("Document ID: %s", document_id)
+    logger.info("Chunks Retrieved: %d", len(retrieved_chunks))
+    logger.info("Similarity Scores: %s", [round(c['score'], 4) for c in retrieved_chunks])
+    if retrieved_chunks:
+        logger.info("Chunk Preview: %s", retrieved_chunks[0]['text'][:200])
+        
+    return retrieved_chunks
 
-    chunks: list[dict[str, object]] = []
-    top_score = 0.0
-
-    for doc_text, metadata, distance in zip(documents, metadatas, distances, strict=False):
-        score = _distance_to_score(float(distance))
-        top_score = max(top_score, score)
-        chunks.append(
-            {
-                "document_id": metadata["document_id"],
-                "page": metadata["page"],
-                "chunk_id": metadata["chunk_id"],
-                "text": doc_text,
-                "score": score,
-            }
-        )
-        logger.debug(
-            "retrieval | chunk_id=%s | page=%s | score=%.4f | preview=%.300s",
-            metadata["chunk_id"],
-            metadata["page"],
-            score,
-            doc_text,
-        )
-
-    logger.info(
-        "retrieval | document_id=%s | chunks_returned=%d | top_score=%.4f | confidence=%s",
-        document_id,
-        len(chunks),
-        top_score,
-        calculate_confidence(top_score),
-    )
-
-    return {
-        "query": query,
-        "chunks": sorted(chunks, key=lambda item: item["score"], reverse=True),
-        "top_score": round(top_score, 2),
-        "confidence": calculate_confidence(top_score),
-    }
-
-
-def build_context(chunks: list[dict[str, object]]) -> str:
-    lines: list[str] = []
+def build_context(chunks: list[dict[str, Any]]) -> str:
+    lines = []
     for chunk in chunks:
-        lines.append(f"[page {chunk['page']}] {chunk['text']}")
+        lines.append(f"[page {chunk.get('page', 0)}] {chunk['text']}")
     return "\n\n".join(lines)

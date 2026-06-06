@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from app.services import llm_service
-from app.services.retrieval_service import retrieve_relevant_chunks, build_context
+from app.services.retrieval_service import retrieve_context, build_context
 
 
 @lru_cache(maxsize=1)
@@ -18,8 +18,7 @@ NO_MATCH = {"simple_explanation": "Bhai ye policy document mein nahi mila."}
 
 
 def explain_simple(document_id: str, question: str, persist_dir: str | None = None) -> dict[str, Any]:
-    retrieval = retrieve_relevant_chunks(query=question, document_id=document_id, persist_dir=persist_dir)
-    chunks = retrieval.get("chunks", [])
+    chunks = retrieve_context(question=question, document_id=document_id, persist_dir=persist_dir)
     if not chunks:
         return NO_MATCH
 
