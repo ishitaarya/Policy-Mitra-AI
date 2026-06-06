@@ -15,8 +15,17 @@ interface AskResponse {
   sources: Array<{ page: number; excerpt: string }>
 }
 
+// In development: Vite proxies `/api/*` → backend (no CORS issues).
+// In production:  set VITE_API_BASE_URL to your deployed backend origin,
+//                 e.g. https://api.policymitra.in
 function baseUrl() {
-  return import.meta.env.VITE_API_BASE_URL ?? ''
+  const envUrl = import.meta.env.VITE_API_BASE_URL as string | undefined
+  // If env var is set and it's a full URL, use it directly (production).
+  // Otherwise fall back to the Vite proxy prefix (development).
+  if (envUrl && envUrl.startsWith('http')) {
+    return envUrl.replace(/\/$/, '')
+  }
+  return '/api'
 }
 
 export async function uploadPolicy(file: File): Promise<UploadPolicyResult> {

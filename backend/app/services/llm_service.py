@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -9,6 +11,8 @@ from typing import Any
 from openai import OpenAI
 
 from app.exceptions import ModelConfigurationError, PromptConfigurationError
+
+logger = logging.getLogger(__name__)
 
 EMPTY_EVIDENCE_RESPONSE = {
     "answer": "Bhai ye policy document mein nahi mila.",
@@ -37,6 +41,15 @@ def load_system_prompt() -> str:
         return SYSTEM_PROMPT_PATH.read_text(encoding="utf-8").strip()
     except FileNotFoundError as exc:
         raise PromptConfigurationError(f"Missing system prompt file: {SYSTEM_PROMPT_PATH}") from exc
+
+
+def _clean_json_output(content: str) -> str:
+    """Strip markdown code fences from LLM output if present."""
+    content = content.strip()
+    if content.startswith("```"):
+        # Match ```json ... ``` or just ``` ... ```
+        content = re.sub(r"^```(?:json)?\s*(.*?)\s*```$", r"\1", content, flags=re.DOTALL)
+    return content.strip()
 
 
 class NavigateLabsLLMService:
@@ -74,8 +87,10 @@ class NavigateLabsLLMService:
 
     def generate_structured_response(self, evidence: str, question: str) -> dict[str, Any]:
         if not evidence.strip():
+            logger.warning("llm | empty evidence provided")
             return dict(EMPTY_EVIDENCE_RESPONSE)
 
+        logger.info("llm | requesting completion | model=%s", self.model_name)
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=self._build_messages(evidence=evidence, question=question),
@@ -84,14 +99,23 @@ class NavigateLabsLLMService:
 
         content = response.choices[0].message.content
         if not content:
+            logger.error("llm | empty response from model")
             raise ValueError("Empty response from model")
 
-        parsed = json.loads(content)
+        content = _clean_json_output(content)
+        
+        try:
+            parsed = json.loads(content)
+        except json.JSONDecodeError as exc:
+            logger.error("llm | failed to parse JSON | content=%.100s | error=%s", content, exc)
+            raise ValueError(f"Failed to parse model response as JSON: {exc}") from exc
+
         if not isinstance(parsed, dict):
             raise ValueError("Model response must be a JSON object")
 
         for key in ("answer", "risk_level", "action_items", "consequence"):
             if key not in parsed:
+                logger.error("llm | missing required key | key=%s | parsed=%s", key, parsed)
                 raise ValueError(f"Missing required key: {key}")
 
         if not isinstance(parsed["action_items"], list):

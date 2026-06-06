@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 
 from app.services import llm_service
 from app.services.retrieval_service import build_context, retrieve_relevant_chunks
 
+logger = logging.getLogger(__name__)
 
 NO_MATCH_RESPONSE = {
     "answer": "Bhai ye policy document mein nahi mila.",
@@ -55,6 +57,13 @@ def answer_policy_question(
     persist_dir: str | Path | None = None,
     top_k: int = 5,
 ) -> dict[str, Any]:
+    logger.info(
+        "workflow | document_id=%s | question=%.200s | persist_dir=%s",
+        document_id,
+        question,
+        persist_dir,
+    )
+
     retrieval = retrieve_relevant_chunks(
         query=question,
         document_id=document_id,
@@ -63,16 +72,37 @@ def answer_policy_question(
     )
 
     chunks = retrieval["chunks"]
+    logger.info(
+        "workflow | document_id=%s | chunks_retrieved=%d | top_score=%s",
+        document_id,
+        len(chunks),
+        retrieval.get("top_score"),
+    )
+
     if not chunks:
+        logger.warning("workflow | document_id=%s | NO chunks found → returning NO_MATCH", document_id)
         return dict(NO_MATCH_RESPONSE)
 
     top_score = max(float(chunk["score"]) for chunk in chunks)
     confidence = _calculate_numeric_confidence(top_score)
+
     if top_score <= 0.0:
+        logger.warning(
+            "workflow | document_id=%s | top_score=%.4f ≤ 0 → returning NO_MATCH",
+            document_id,
+            top_score,
+        )
         return dict(NO_MATCH_RESPONSE)
 
     context = build_context(chunks)
+    logger.debug("workflow | document_id=%s | context_chars=%d", document_id, len(context))
+
     llm_response = llm_service.generate_structured_response(evidence=context, question=question)
+    logger.info(
+        "workflow | document_id=%s | llm_answer_preview=%.200s",
+        document_id,
+        str(llm_response.get("answer", "")),
+    )
 
     return {
         "answer": llm_response["answer"],
