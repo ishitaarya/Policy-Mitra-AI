@@ -9,9 +9,12 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { CitationBadges } from '@/components/CitationBadges'
 import { ComplaintModal } from '@/components/ComplaintModal'
 import { PolicyImpactCard } from '@/components/PolicyImpactCard'
+import { SourceEvidencePanel } from '@/components/SourceEvidencePanel'
 import { complaintTemplate } from '@/data/mock'
+import { getMessageSources } from '@/lib/sourceEvidence'
 import type { ChatMessage } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -22,9 +25,14 @@ interface MessageCardProps {
 
 export function MessageCard({ message, index }: MessageCardProps) {
   const [showELI5, setShowELI5] = useState(false)
-  const [showSource, setShowSource] = useState(false)
   const [complaintOpen, setComplaintOpen] = useState(false)
   const [actions, setActions] = useState(message.actions ?? [])
+  const sources = getMessageSources(message)
+
+  const scrollToEvidencePanel = () => {
+    const panel = document.getElementById(`evidence-panel-${message.id}`)
+    panel?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
 
   if (message.role === 'user') {
     return (
@@ -58,7 +66,6 @@ export function MessageCard({ message, index }: MessageCardProps) {
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-3 lg:flex-row lg:items-start">
-          {/* Response body */}
           <div className="min-w-0 flex-1 space-y-3">
             <div className="glass space-y-3 rounded-2xl rounded-tl-md p-4">
               {message.requirement && (
@@ -75,6 +82,13 @@ export function MessageCard({ message, index }: MessageCardProps) {
 
               <p className="text-sm leading-relaxed text-slate-300">
                 {showELI5 ? eli5Text : message.content}
+                {sources.length > 0 && (
+                  <CitationBadges
+                    messageId={message.id}
+                    count={sources.length}
+                    className="ml-1.5 inline"
+                  />
+                )}
               </p>
 
               {actions.length > 0 && (
@@ -105,29 +119,14 @@ export function MessageCard({ message, index }: MessageCardProps) {
                 </div>
               )}
 
-              {message.source && (
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <BookOpen className="h-3.5 w-3.5 text-violet-400" />
-                  <span>
-                    Source: Page {message.source.page} — {message.source.section}
-                  </span>
-                </div>
-              )}
-
-              {showSource && message.source && (
-                <motion.div
-                  className="rounded-lg border border-violet-500/20 bg-violet-500/5 p-3"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                >
-                  <p className="text-xs italic leading-relaxed text-slate-400">
-                    "{message.source.excerpt}"
-                  </p>
-                </motion.div>
-              )}
-
               <p className="text-[10px] text-slate-600">{message.timestamp}</p>
             </div>
+
+            {sources.length > 0 && (
+              <div id={`evidence-panel-${message.id}`}>
+                <SourceEvidencePanel messageId={message.id} sources={sources} />
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowELI5(!showELI5)}>
@@ -138,14 +137,15 @@ export function MessageCard({ message, index }: MessageCardProps) {
                 <MessageSquare className="h-3.5 w-3.5" />
                 Generate Complaint
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowSource(!showSource)}>
-                <BookOpen className="h-3.5 w-3.5" />
-                Show Source
-              </Button>
+              {sources.length > 0 && (
+                <Button variant="outline" size="sm" onClick={scrollToEvidencePanel}>
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Show Sources
+                </Button>
+              )}
             </div>
           </div>
 
-          {/* Policy Impact Card — beside response */}
           {message.impact && (
             <PolicyImpactCard impact={message.impact} index={index} />
           )}

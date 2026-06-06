@@ -66,6 +66,7 @@ export function ChatInterface({ onWorkflowChange }: ChatInterfaceProps) {
       policyCategory: bundle.policyCategory,
       impact: bundle.impact,
       source: bundle.source,
+      sources: bundle.sources,
       actions: bundle.actions,
     }
 

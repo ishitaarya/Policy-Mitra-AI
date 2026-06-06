@@ -42,6 +42,7 @@ export const initialMessages: ChatMessage[] = [
     impact: attendanceBundle.impact,
     actions: attendanceBundle.actions,
     source: attendanceBundle.source,
+    sources: attendanceBundle.sources,
   },
 ]
 

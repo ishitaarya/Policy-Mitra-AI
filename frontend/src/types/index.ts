@@ -26,6 +26,16 @@ export interface SourceCitation {
   excerpt: string
 }
 
+export interface SourceEvidence {
+  id: string
+  documentName: string
+  page: number
+  section?: string
+  confidenceScore: number
+  excerpt: string
+  fullContext: string
+}
+
 export interface PolicyImpact {
   riskLevel: RiskLevel
   requiredAction: string
@@ -44,6 +54,7 @@ export interface ChatMessage {
   impact?: PolicyImpact
   actions?: ActionItem[]
   source?: SourceCitation
+  sources?: SourceEvidence[]
   policyCategory?: string
   requirement?: string
 }

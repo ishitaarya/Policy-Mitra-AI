@@ -261,6 +261,33 @@ body {
   -webkit-backdrop-filter: blur(12px);
 }
 
+/* Source Evidence Panel */
+.source-card-highlight {
+  border-color: rgba(34, 211, 238, 0.55) !important;
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.25),
+    0 0 20px rgba(34, 211, 238, 0.15);
+  animation: source-highlight-pulse 1.6s ease-out;
+}
+
+@keyframes source-highlight-pulse {
+  0% {
+    box-shadow:
+      0 0 0 2px rgba(34, 211, 238, 0.5),
+      0 0 24px rgba(34, 211, 238, 0.25);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(34, 211, 238, 0),
+      0 0 0 rgba(34, 211, 238, 0);
+  }
+}
+
+.citation-badge {
+  vertical-align: super;
+  margin-left: 2px;
+}
+
 /* Policy Impact Card */
 .impact-card {
   background: linear-gradient(

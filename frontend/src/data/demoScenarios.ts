@@ -5,6 +5,7 @@ import {
   Wifi,
   ClipboardList,
 } from 'lucide-react'
+import { responseBundles } from '@/data/policyImpact'
 import type { ChatMessage, RiskLevel } from '@/types'
 
 export type DemoScenarioId =
@@ -82,6 +83,7 @@ export const demoScenarios: DemoScenario[] = [
         excerpt:
           'Students must maintain a minimum of 75% attendance in each subject. Failure to meet this requirement may result in detention from end-semester examinations.',
       },
+      sources: responseBundles['Attendance short ka scene?'].sources,
     }),
   },
   {
@@ -121,6 +123,36 @@ export const demoScenarios: DemoScenario[] = [
           excerpt:
             'Residents must report connectivity issues within 24 hours. Hostel IT is obligated to resolve outages within 48 hours or provide formal escalation pathway.',
         },
+        sources: [
+          {
+            id: 'wifi-1',
+            documentName: 'Hostel Rules & Guidelines.pdf',
+            page: 9,
+            section: 'Section 5.4 — IT Infrastructure Complaints',
+            confidenceScore: 92,
+            excerpt:
+              'Residents must report connectivity issues within 24 hours. Hostel IT is obligated to resolve outages within 48 hours or provide formal escalation pathway.',
+            fullContext: `Section 5.4 — IT Infrastructure Complaints
+
+All hostel residents experiencing WiFi or network connectivity issues must report the problem to the Block Warden within 24 hours of occurrence. A formal complaint ticket must be raised on the Hostel IT Helpdesk portal.
+
+Hostel IT Services is obligated to resolve reported outages within 48 hours. If resolution is not achieved within 72 hours, residents may escalate the complaint to the Chief Warden with a written statement and ticket reference number.`,
+          },
+          {
+            id: 'wifi-2',
+            documentName: 'Hostel Rules & Guidelines.pdf',
+            page: 10,
+            section: 'Section 5.5 — Escalation Procedure',
+            confidenceScore: 84,
+            excerpt:
+              'Unresolved complaints beyond 72 hours must be escalated to the Chief Warden in writing with ticket reference.',
+            fullContext: `Section 5.5 — Complaint Escalation Procedure
+
+If a hostel IT complaint remains unresolved after 72 hours from the initial ticket submission, the resident must submit a written escalation to the Chief Warden's office. The escalation must include: ticket number, dates of outage, prior communication records, and impact statement.
+
+Failure to follow the escalation procedure may result in denial of service credit claims.`,
+          },
+        ],
       }
     ),
   },
@@ -159,6 +191,7 @@ export const demoScenarios: DemoScenario[] = [
         excerpt:
           'Medical leave exceeding 3 consecutive days requires Dean approval. Certified hospital documentation must be submitted within 48 hours of the student\'s return to campus.',
       },
+      sources: responseBundles['Leave application kaise kare?'].sources,
     }),
   },
   {
@@ -196,6 +229,7 @@ export const demoScenarios: DemoScenario[] = [
         excerpt:
           'Applicants must maintain a minimum aggregate of 85% and submit verified family income certificate not exceeding ₹6,00,000 per annum.',
       },
+      sources: responseBundles['Scholarship eligibility?'].sources,
     }),
   },
 ]
