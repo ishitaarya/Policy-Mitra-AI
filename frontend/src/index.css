@@ -1,0 +1,304 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-background: #0a0f1a;
+  --color-foreground: #f1f5f9;
+  --color-card: rgba(15, 23, 42, 0.6);
+  --color-card-foreground: #f1f5f9;
+  --color-muted: #64748b;
+  --color-muted-foreground: #94a3b8;
+  --color-border: rgba(148, 163, 184, 0.12);
+  --color-accent-purple: #8b5cf6;
+  --color-accent-cyan: #22d3ee;
+  --color-risk-low: #22c55e;
+  --color-risk-medium: #eab308;
+  --color-risk-high: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+.glass {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.glass-hover {
+  transition: all 0.3s ease;
+}
+
+.glass-hover:hover {
+  background: rgba(15, 23, 42, 0.75);
+  border-color: rgba(139, 92, 246, 0.25);
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.08);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #a78bfa 0%, #22d3ee 50%, #a78bfa 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer-text 4s linear infinite;
+}
+
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.5), rgba(34, 211, 238, 0.5));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.05) 0%,
+    rgba(148, 163, 184, 0.15) 50%,
+    rgba(148, 163, 184, 0.05) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes shimmer-text {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.35);
+}
+
+/* AI Command Center — cyber dashboard */
+.cyber-panel {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(6, 12, 24, 0.95) 0%,
+    rgba(10, 18, 36, 0.92) 50%,
+    rgba(6, 12, 24, 0.95) 100%
+  );
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  box-shadow:
+    0 0 30px rgba(34, 211, 238, 0.08),
+    0 0 60px rgba(139, 92, 246, 0.06),
+    inset 0 1px 0 rgba(34, 211, 238, 0.1);
+}
+
+.cyber-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+
+.cyber-scanline {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(34, 211, 238, 0.015) 2px,
+    rgba(34, 211, 238, 0.015) 4px
+  );
+  animation: scanline-scroll 8s linear infinite;
+}
+
+@keyframes scanline-scroll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(20px); }
+}
+
+.cyber-progress-track {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(34, 211, 238, 0.15);
+}
+
+.cyber-progress-fill {
+  background: linear-gradient(90deg, #8b5cf6, #22d3ee, #8b5cf6);
+  background-size: 200% 100%;
+  animation: cyber-pulse-bar 2s linear infinite;
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+}
+
+@keyframes cyber-pulse-bar {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+.cyber-stage-active {
+  background: rgba(34, 211, 238, 0.04);
+  border: 1px solid rgba(34, 211, 238, 0.15);
+}
+
+.cyber-stage-complete {
+  background: rgba(34, 197, 94, 0.04);
+  border: 1px solid rgba(34, 197, 94, 0.12);
+}
+
+/* AI Thinking Workflow — inline chat */
+.thinking-workflow {
+  background: linear-gradient(
+    135deg,
+    rgba(12, 18, 32, 0.92) 0%,
+    rgba(15, 23, 42, 0.88) 100%
+  );
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow:
+    0 0 24px rgba(139, 92, 246, 0.06),
+    0 0 48px rgba(34, 211, 238, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.thinking-progress-track {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+}
+
+.thinking-progress-fill {
+  background: linear-gradient(90deg, #7c3aed, #22d3ee, #a78bfa);
+  background-size: 200% 100%;
+  animation: cyber-pulse-bar 2.5s linear infinite;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.45);
+}
+
+.thinking-connector {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.3) 20%,
+    rgba(34, 211, 238, 0.3) 80%,
+    transparent 100%
+  );
+}
+
+.thinking-step-active {
+  background: rgba(34, 211, 238, 0.04);
+}
+
+.thinking-step-complete {
+  background: rgba(34, 197, 94, 0.03);
+}
+
+/* Demo Scenario Cards */
+.demo-scenario-card {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Source Evidence Panel */
+.source-card-highlight {
+  border-color: rgba(34, 211, 238, 0.55) !important;
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.25),
+    0 0 20px rgba(34, 211, 238, 0.15);
+  animation: source-highlight-pulse 1.6s ease-out;
+}
+
+@keyframes source-highlight-pulse {
+  0% {
+    box-shadow:
+      0 0 0 2px rgba(34, 211, 238, 0.5),
+      0 0 24px rgba(34, 211, 238, 0.25);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(34, 211, 238, 0),
+      0 0 0 rgba(34, 211, 238, 0);
+  }
+}
+
+.citation-badge {
+  vertical-align: super;
+  margin-left: 2px;
+}
+
+/* Policy Impact Card */
+.impact-card {
+  background: linear-gradient(
+    160deg,
+    rgba(12, 18, 32, 0.95) 0%,
+    rgba(15, 23, 42, 0.9) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
