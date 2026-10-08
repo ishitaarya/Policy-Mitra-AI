@@ -1,4 +1,4 @@
-export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH'
+export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN'
 
 export interface Document {
   id: string
@@ -60,6 +60,8 @@ export interface ChatMessage {
   timestamp: string
   riskLevel?: RiskLevel
   riskScore?: number
+  confidence?: number
+  consequence?: string
   impact?: PolicyImpact
   actions?: ActionItem[]
   source?: SourceCitation
