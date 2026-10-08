@@ -34,11 +34,7 @@ def _read_env(name: str, fallback: str | None = None) -> str:
     value = os.getenv(name)
     if value:
         return value
-    if fallback is not None:
-        fallback_value = os.getenv(fallback)
-        if fallback_value:
-            return fallback_value
-    return ""
+    return os.getenv(fallback, "") if fallback else ""
 
 
 @lru_cache(maxsize=1)
@@ -50,11 +46,10 @@ def load_system_prompt() -> str:
 
 
 def _clean_json_output(content: str) -> str:
-    """Strip markdown code fences from LLM output if present."""
     content = content.strip()
-    if content.startswith("```"):
-        # Match ```json ... ``` or just ``` ... ```
-        content = re.sub(r"^```(?:json)?\s*(.*?)\s*```$", r"\1", content, flags=re.DOTALL)
+    fence = chr(96) * 3
+    if content.startswith(fence):
+        content = re.sub(r"^" + re.escape(fence) + r"(?:json)?\s*(.*?)\s*" + re.escape(fence) + r"$", r"\1", content, flags=re.DOTALL)
     return content.strip()
 
 
@@ -76,44 +71,35 @@ class NavigateLabsLLMService:
         return [model.id for model in response.data]
 
     def validate_model(self) -> None:
-        available_models = self.list_models()
-        if self.model_name not in available_models:
+        if self.model_name not in self.list_models():
             raise ModelConfigurationError(f"Model '{self.model_name}' is not available")
 
     def _build_messages(self, evidence: str, question: str) -> list[dict[str, str]]:
-        user_prompt = (
-            f"Question:\n{question}\n\n"
-            f"Retrieved Evidence:\n{evidence}\n\n"
-            "Return JSON only."
-        )
         return [
             {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": user_prompt},
+            {
+                "role": "user",
+                "content": f"Question:\n{question}\n\nRetrieved Evidence:\n{evidence}\n\nReturn JSON only.",
+            },
         ]
 
     def generate_structured_response(self, evidence: str, question: str) -> dict[str, Any]:
         if not evidence.strip():
-            logger.warning("llm | empty evidence provided")
             return dict(EMPTY_EVIDENCE_RESPONSE)
 
-        logger.info("llm | requesting completion | model=%s", self.model_name)
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=self._build_messages(evidence=evidence, question=question),
             temperature=0,
         )
-
         content = response.choices[0].message.content
         if not content:
-            logger.error("llm | empty response from model")
-            raise ValueError("Empty response from model")
+            raise StructuredResponseError("Empty response from model", raw_content="")
 
         content = _clean_json_output(content)
-        
         try:
             parsed = json.loads(content)
         except json.JSONDecodeError as exc:
-            logger.error("llm | failed to parse JSON | content=%.100s | error=%s", content, exc)
             raise StructuredResponseError(
                 f"Failed to parse model response as JSON: {exc}",
                 raw_content=content,
@@ -122,22 +108,27 @@ class NavigateLabsLLMService:
         if not isinstance(parsed, dict):
             raise StructuredResponseError("Model response must be a JSON object", raw_content=content)
 
-        for key in ("answer", "risk_level", "action_items", "consequence"):
-            if key not in parsed:
-                logger.error("llm | missing required key | key=%s | parsed=%s", key, parsed)
-                fallback_content = str(parsed.get("answer") or content)
-                raise StructuredResponseError(
-                    f"Missing required key: {key}",
-                    raw_content=fallback_content,
-                )
+        required = ("answer", "risk_level", "action_items", "consequence")
+        missing = [key for key in required if key not in parsed]
+        if missing:
+            raise StructuredResponseError(
+                f"Missing required keys: {', '.join(missing)}",
+                raw_content=str(parsed.get("answer") or content),
+            )
 
-        if not isinstance(parsed["action_items"], list):
-            raise StructuredResponseError("action_items must be a list", raw_content=str(parsed["answer"]))
+        if not isinstance(parsed["answer"], str) or not parsed["answer"].strip():
+            raise StructuredResponseError("answer must be a non-empty string", raw_content=content)
+        if not isinstance(parsed["risk_level"], str):
+            raise StructuredResponseError("risk_level must be a string", raw_content=content)
+        if not isinstance(parsed["action_items"], list) or not all(
+            isinstance(item, str) and item.strip() for item in parsed["action_items"]
+        ):
+            raise StructuredResponseError("action_items must be a list of non-empty strings", raw_content=content)
 
         return {
-            "answer": parsed["answer"],
-            "risk_level": parsed["risk_level"],
-            "consequence": parsed["consequence"],
+            "answer": parsed["answer"].strip(),
+            "risk_level": parsed["risk_level"].upper(),
+            "consequence": str(parsed["consequence"]).strip(),
             "action_items": parsed["action_items"],
         }
 
@@ -165,18 +156,16 @@ def generate_structured_response(evidence: str, question: str) -> dict[str, Any]
 
 
 def generate_text_response(evidence: str, question: str, system_prompt: str) -> str:
-    """Generate a freeform text response using a custom system prompt.
-
-    This uses the existing NavigateLabs client and is a thin wrapper so
-    higher-level services can load prompts from files and pass them in.
-    """
     service = _get_service()
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": f"Question:\n{question}\n\nRetrieved Evidence:\n{evidence}\n\n"},
     ]
-
-    response = service.client.chat.completions.create(model=service.model_name, messages=messages, temperature=0)
+    response = service.client.chat.completions.create(
+        model=service.model_name,
+        messages=messages,
+        temperature=0,
+    )
     content = response.choices[0].message.content
     if not content:
         raise ValueError("Empty response from model")
