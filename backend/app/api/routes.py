@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
@@ -29,6 +31,7 @@ from app.services.retrieval_service import retrieve_context
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+MAX_UPLOAD_BYTES = int(float(os.getenv("MAX_UPLOAD_MB", "15")) * 1024 * 1024)
 
 
 def _uploads_dir() -> Path:
@@ -38,7 +41,6 @@ def _uploads_dir() -> Path:
 
 
 def _chroma_dir() -> Path:
-    """Return the ChromaDB persist directory (separate from PDF uploads)."""
     directory = storage_path("CHROMA_PERSIST_DIR", "vectorstore")
     directory.mkdir(parents=True, exist_ok=True)
     return directory
@@ -51,60 +53,75 @@ async def health_check() -> dict[str, str]:
 
 @router.post("/upload-policy", response_model=UploadPolicyResponse)
 async def upload_policy(file: UploadFile = File(...)) -> UploadPolicyResponse:
+    if Path(file.filename or "").suffix.lower() != ".pdf":
+        raise HTTPException(status_code=400, detail="Only PDF policy documents are supported.")
+
+    if file.content_type not in (None, "", "application/pdf", "application/octet-stream"):
+        raise HTTPException(status_code=400, detail="Only PDF policy documents are supported.")
+
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded PDF is empty.")
+    if len(contents) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"PDF exceeds the {MAX_UPLOAD_BYTES // (1024 * 1024)} MB upload limit.",
+        )
+
     uploads_dir = _uploads_dir()
     chroma_dir = _chroma_dir()
 
-    filename = Path(file.filename or "policy.pdf").name
-    destination = uploads_dir / filename
+    original_name = Path(file.filename or "policy.pdf").name
+    temp_path = uploads_dir / f".{uuid.uuid4().hex}.uploading"
+    temp_path.write_bytes(contents)
 
-    contents = await file.read()
-    destination.write_bytes(contents)
+    try:
+        document_id = compute_document_id(temp_path)
+        destination = uploads_dir / f"{document_id}.pdf"
+        if not destination.exists():
+            temp_path.replace(destination)
+        else:
+            temp_path.unlink(missing_ok=True)
 
-    document_id = compute_document_id(destination)
-    logger.info("upload | document_id=%s | file=%s", document_id, filename)
+        logger.info("upload | document_id=%s | file=%s", document_id, original_name)
 
-    pages = load_pdf(destination)
-    chunks = create_chunks(pages, document_id=document_id)
+        pages = load_pdf(destination)
+        chunks = create_chunks(pages, document_id=document_id)
 
-    if not chunks:
-        logger.warning("upload | document_id=%s | no chunks after splitting", document_id)
+        if not chunks:
+            logger.warning("upload | document_id=%s | no chunks after splitting", document_id)
+            return UploadPolicyResponse(
+                document_id=document_id,
+                pages=len(pages),
+                chunks_created=0,
+                status="empty",
+            )
+
+        embeddings = generate_embeddings([chunk.text for chunk in chunks])
+        stats = store_chunks(chunks, embeddings, persist_dir=chroma_dir)
+
         return UploadPolicyResponse(
             document_id=document_id,
-            pages=len(pages),
-            chunks_created=0,
-            status="empty",
+            pages=stats.pages,
+            chunks_created=stats.chunks_created,
+            status="indexed",
         )
-
-    embeddings = generate_embeddings([chunk.text for chunk in chunks])
-    stats = store_chunks(chunks, embeddings, persist_dir=chroma_dir)
-
-    return UploadPolicyResponse(
-        document_id=document_id,
-        pages=stats.pages,
-        chunks_created=stats.chunks_created,
-        status="indexed",
-    )
+    except Exception:
+        if temp_path.exists():
+            temp_path.unlink(missing_ok=True)
+        raise
 
 
 @router.post("/ask", response_model=AskResponse, response_model_exclude_none=True)
 async def ask_policy_question(payload: AskRequest) -> dict[str, object]:
-    logger.info(
-        "ask | document_id=%s | question=%.200s",
-        payload.document_id,
-        payload.question,
-    )
+    logger.info("ask | document_id=%s | question=%.200s", payload.document_id, payload.question)
     try:
-        result = answer_policy_question(
-            document_id=payload.document_id,
-            question=payload.question,
-        )
-
+        result = answer_policy_question(document_id=payload.document_id, question=payload.question)
         logger.info(
             "ask | document_id=%s | answer_preview=%.200s",
             payload.document_id,
             str(result.get("answer", "")),
         )
-
         if result == dict(NO_MATCH_RESPONSE):
             return JSONResponse(content=NO_MATCH_RESPONSE)
         return result
@@ -117,7 +134,6 @@ async def ask_policy_question(payload: AskRequest) -> dict[str, object]:
 
 @router.get("/debug/chunks/{document_id}")
 async def debug_chunks(document_id: str) -> dict[str, object]:
-    """Debug endpoint: inspect what is actually stored in ChromaDB for a document."""
     chroma_dir = _chroma_dir()
     chunks = get_document_chunks(document_id=document_id, persist_dir=chroma_dir)
     return {
@@ -142,12 +158,7 @@ async def debug_retrieval(
     question: str = Query(..., min_length=1),
 ) -> dict[str, object]:
     chroma_dir = _chroma_dir()
-    retrieved_chunks = retrieve_context(
-        document_id=document_id,
-        question=question,
-        persist_dir=chroma_dir,
-    )
-
+    retrieved_chunks = retrieve_context(document_id=document_id, question=question, persist_dir=chroma_dir)
     return {
         "retrieved_chunks": [c["text"] for c in retrieved_chunks],
         "scores": [c["score"] for c in retrieved_chunks],
@@ -161,7 +172,4 @@ async def generate_complaint_endpoint(payload: ComplaintRequest) -> dict[str, st
 
 @router.post("/explain-simple", response_model=ELI5Response)
 async def explain_simple_endpoint(payload: ELI5Request) -> dict[str, str]:
-    return explain_simple(
-        document_id=payload.document_id,
-        question=payload.question,
-    )
+    return explain_simple(document_id=payload.document_id, question=payload.question)
