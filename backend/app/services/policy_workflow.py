@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -24,12 +25,10 @@ def _calculate_numeric_confidence(top_score: float) -> int:
 
 
 def _build_sources(chunks: list[dict[str, object]]) -> list[dict[str, object]]:
-    sources: list[dict[str, object]] = []
-    for chunk in chunks:
-        text = str(chunk["text"])
-        excerpt = " ".join(text.split())[:200]
-        sources.append({"page": chunk["page"], "excerpt": excerpt})
-    return sources
+    return [
+        {"page": chunk["page"], "excerpt": " ".join(str(chunk["text"]).split())[:200]}
+        for chunk in chunks
+    ]
 
 
 def _assign_priority_for_task(task: str, risk_level: str) -> str:
@@ -44,11 +43,7 @@ def _assign_priority_for_task(task: str, risk_level: str) -> str:
 
 
 def _build_action_plan(action_items: list[str], risk_level: str) -> list[dict[str, str]]:
-    plan: list[dict[str, str]] = []
-    for task in action_items:
-        priority = _assign_priority_for_task(task, risk_level)
-        plan.append({"task": task, "priority": priority})
-    return plan
+    return [{"task": task, "priority": _assign_priority_for_task(task, risk_level)} for task in action_items]
 
 
 def answer_policy_question(
@@ -57,13 +52,6 @@ def answer_policy_question(
     persist_dir: str | Path | None = None,
     top_k: int = 5,
 ) -> dict[str, Any]:
-    logger.info(
-        "workflow | document_id=%s | question=%.200s | persist_dir=%s",
-        document_id,
-        question,
-        persist_dir,
-    )
-
     retrieval = retrieve_relevant_chunks(
         query=question,
         document_id=document_id,
@@ -72,58 +60,39 @@ def answer_policy_question(
     )
     chunks = retrieval["chunks"]
 
-    logger.info(
-        "workflow | document_id=%s | chunks_retrieved=%d",
-        document_id,
-        len(chunks),
-    )
-
     if not chunks:
-        logger.warning("workflow | document_id=%s | NO chunks found → returning NO_MATCH", document_id)
+        logger.warning("workflow | document_id=%s | no evidence", document_id)
         return dict(NO_MATCH_RESPONSE)
 
     top_score = float(retrieval["top_score"])
-    confidence_score = max((float(chunk["score"]) for chunk in chunks), default=top_score)
-    confidence = _calculate_numeric_confidence(confidence_score)
-
-    # Note: similarity score could be 0 if distance >= 1
-    if top_score <= 0.0:
+    min_score = float(os.getenv("RETRIEVAL_MIN_SCORE", "0.45"))
+    if top_score < min_score:
         logger.warning(
-            "workflow | document_id=%s | top_score=%.4f ≤ 0 → returning NO_MATCH",
+            "workflow | document_id=%s | weak evidence top_score=%.4f threshold=%.4f",
             document_id,
             top_score,
+            min_score,
         )
         return dict(NO_MATCH_RESPONSE)
 
+    confidence = _calculate_numeric_confidence(top_score)
     context = build_context(chunks)
-    logger.debug("workflow | document_id=%s | context_chars=%d", document_id, len(context))
 
     try:
         llm_response = llm_service.generate_structured_response(evidence=context, question=question)
-    except llm_service.StructuredResponseError as exc:
-        logger.warning(
-            "workflow | document_id=%s | using unstructured model answer: %s",
-            document_id,
-            exc,
-        )
-        llm_response = {
-            "answer": exc.raw_content,
-            "risk_level": "UNKNOWN",
-            "action_items": [],
-            "consequence": "Not specified in policy.",
-        }
-    logger.info(
-        "workflow | document_id=%s | llm_answer_preview=%.200s",
-        document_id,
-        str(llm_response.get("answer", "")),
-    )
+    except llm_service.StructuredResponseError:
+        return dict(NO_MATCH_RESPONSE)
+
+    risk_level = str(llm_response.get("risk_level", "UNKNOWN")).upper()
+    if risk_level not in {"LOW", "MEDIUM", "HIGH", "UNKNOWN"}:
+        risk_level = "UNKNOWN"
 
     return {
-        "answer": llm_response["answer"],
-        "risk_level": llm_response["risk_level"],
+        "answer": str(llm_response.get("answer", "")),
+        "risk_level": risk_level,
         "confidence": confidence,
-        "action_items": llm_response["action_items"],
-        "action_plan": _build_action_plan(llm_response["action_items"], llm_response["risk_level"]),
+        "action_items": llm_response.get("action_items", []),
+        "action_plan": _build_action_plan(llm_response.get("action_items", []), risk_level),
         "consequence": llm_response.get("consequence", "Not specified in policy."),
         "sources": _build_sources(chunks),
         "metadata": {
