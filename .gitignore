@@ -1,0 +1,19 @@
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local application storage
+vectorstore/
+data/pdfs/
+backend/vectorstore/
+backend/data/pdfs/
+
+# Node
+node_modules/
+dist/
