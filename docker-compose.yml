@@ -1,0 +1,26 @@
+services:
+  backend:
+    build: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      PORT: 8000
+      CHROMA_PERSIST_DIR: /app/vectorstore
+      UPLOADS_DIR: /app/data/pdfs
+      CORS_ORIGINS: http://localhost:8080
+    volumes:
+      - chroma_data:/app/vectorstore
+      - pdf_data:/app/data/pdfs
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  chroma_data:
+  pdf_data:
