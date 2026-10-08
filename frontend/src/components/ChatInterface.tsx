@@ -7,7 +7,7 @@ import { AIThinkingWorkflow } from '@/components/AIThinkingWorkflow'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useComplaintDrawer } from '@/context/ComplaintDrawerContext'
-import { initialMessages, suggestedPrompts } from '@/data/mock'
+import { suggestedPrompts } from '@/data/mock'
 import { askPolicy, mapAskResponseToChatMessage } from '@/lib/api'
 import { isComplaintIssue } from '@/lib/complaintGenerator'
 import { consumeDemoMessages } from '@/lib/demoMode'
@@ -16,15 +16,16 @@ import type { ChatMessage, UploadedDocument } from '@/types'
 function resolveInitialState(): { messages: ChatMessage[]; hasInteracted: boolean } {
   const demo = consumeDemoMessages()
   if (demo) return { messages: demo, hasInteracted: true }
-  return { messages: initialMessages, hasInteracted: false }
+  return { messages: [], hasInteracted: false }
 }
 
 interface ChatInterfaceProps {
   activeDocument: UploadedDocument | null
   onWorkflowChange?: (active: boolean) => void
+  onAssistantResponse?: (message: ChatMessage) => void
 }
 
-export function ChatInterface({ activeDocument, onWorkflowChange }: ChatInterfaceProps) {
+export function ChatInterface({ activeDocument, onWorkflowChange, onAssistantResponse }: ChatInterfaceProps) {
   const { openDrawer } = useComplaintDrawer()
   const [{ messages: initial, hasInteracted: initialInteracted }] = useState(resolveInitialState)
   const [messages, setMessages] = useState<ChatMessage[]>(initial)
@@ -40,11 +41,11 @@ export function ChatInterface({ activeDocument, onWorkflowChange }: ChatInterfac
   }, [messages, isThinking])
 
   const deliverResponse = useCallback(() => {
-    workflowCompleteRef.current = true
     const response = pendingResponseRef.current
     if (!response) return
 
     setMessages((prev) => [...prev, response])
+    onAssistantResponse?.(response)
 
     const userQuery = response.relatedUserQuery
     if (userQuery && isComplaintIssue(userQuery)) {
@@ -65,11 +66,10 @@ export function ChatInterface({ activeDocument, onWorkflowChange }: ChatInterfac
     workflowCompleteRef.current = false
     setIsThinking(false)
     onWorkflowChange?.(false)
-  }, [onWorkflowChange, openDrawer])
+  }, [onAssistantResponse, onWorkflowChange, openDrawer])
 
   const sendMessage = (text: string) => {
     if (!text.trim() || isThinking) return
-
     const trimmed = text.trim()
 
     if (!activeDocument?.document_id) {
@@ -87,38 +87,32 @@ export function ChatInterface({ activeDocument, onWorkflowChange }: ChatInterfac
     setMessages((prev) => [...prev, userMsg])
     setInput('')
     setHasInteracted(true)
-
     workflowCompleteRef.current = false
     pendingResponseRef.current = null
     setIsThinking(true)
     onWorkflowChange?.(true)
 
-    // call backend
     ;(async () => {
       try {
         const resp = await askPolicy(activeDocument.document_id, trimmed)
-        const mapped = mapAskResponseToChatMessage(
+        pendingResponseRef.current = mapAskResponseToChatMessage(
           resp,
           trimmed,
           activeDocument.name,
           activeDocument.document_id,
-        )
-        pendingResponseRef.current = mapped as ChatMessage
+        ) as ChatMessage
       } catch (err: any) {
         console.error('ask error', err)
-        const now = new Date()
         pendingResponseRef.current = {
           id: `${Date.now()}-assistant-error`,
           role: 'assistant',
           content: `Error fetching answer: ${err?.message ?? 'Service unavailable'}`,
-          timestamp: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           relatedUserQuery: trimmed,
-        } as ChatMessage
+        }
       }
 
-      if (workflowCompleteRef.current) {
-        deliverResponse()
-      }
+      if (workflowCompleteRef.current) deliverResponse()
     })()
   }
 
@@ -126,12 +120,8 @@ export function ChatInterface({ activeDocument, onWorkflowChange }: ChatInterfac
     <div className="flex h-full flex-1 flex-col">
       <ScrollArea className="flex-1 px-6">
         <div className="mx-auto max-w-3xl space-y-6 py-8">
-          {!hasInteracted && messages.length <= 2 && (
-            <motion.div
-              className="flex flex-col items-center text-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
+          {!hasInteracted && messages.length === 0 && (
+            <motion.div className="flex flex-col items-center text-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               <motion.div
                 className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500 shadow-xl shadow-violet-500/25"
                 animate={{ rotate: [0, 5, -5, 0] }}
@@ -139,12 +129,10 @@ export function ChatInterface({ activeDocument, onWorkflowChange }: ChatInterfac
               >
                 <Sparkles className="h-8 w-8 text-white" />
               </motion.div>
-              <h2 className="text-2xl font-semibold text-slate-100">
-                Kya poochna hai aaj?
-              </h2>
+              <h2 className="text-2xl font-semibold text-slate-100">Kya poochna hai aaj?</h2>
               <p className="mt-2 max-w-md text-sm text-slate-400">
-                Apne college policies ke baare mein Hindi, Hinglish, ya English mein poocho.
-                Instant answers with risk analysis & action steps.
+                Upload an official college policy, then ask in Hindi, Hinglish, or English.
+                Answers are grounded only in the uploaded document.
               </p>
               <div className="mt-6">
                 <QuickPromptChips prompts={suggestedPrompts} onSelect={sendMessage} />
@@ -157,18 +145,12 @@ export function ChatInterface({ activeDocument, onWorkflowChange }: ChatInterfac
               key={msg.id}
               message={msg}
               index={i}
-              userQuery={
-                msg.role === 'assistant'
-                  ? msg.relatedUserQuery ?? messages[i - 1]?.content
-                  : undefined
-              }
+              userQuery={msg.role === 'assistant' ? msg.relatedUserQuery ?? messages[i - 1]?.content : undefined}
             />
           ))}
 
           <AnimatePresence>
-            {isThinking && (
-              <AIThinkingWorkflow active={isThinking} onComplete={deliverResponse} />
-            )}
+            {isThinking && <AIThinkingWorkflow active={isThinking} onComplete={deliverResponse} />}
           </AnimatePresence>
           <div ref={bottomRef} />
         </div>
@@ -176,17 +158,12 @@ export function ChatInterface({ activeDocument, onWorkflowChange }: ChatInterfac
 
       <div className="border-t border-slate-800/60 p-4">
         <div className="mx-auto max-w-3xl">
-          {messages.length <= 2 && hasInteracted && (
+          {messages.length === 0 && hasInteracted && (
             <div className="mb-3">
               <QuickPromptChips prompts={suggestedPrompts} onSelect={sendMessage} />
             </div>
           )}
-          <motion.div
-            className="glass gradient-border flex items-end gap-2 rounded-2xl p-2"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
+          <motion.div className="glass gradient-border flex items-end gap-2 rounded-2xl p-2" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -200,17 +177,12 @@ export function ChatInterface({ activeDocument, onWorkflowChange }: ChatInterfac
               rows={1}
               className="max-h-32 min-h-[44px] flex-1 resize-none bg-transparent px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none"
             />
-            <Button
-              size="icon"
-              className="h-10 w-10 shrink-0 rounded-xl"
-              onClick={() => sendMessage(input)}
-              disabled={!input.trim() || isThinking}
-            >
+            <Button size="icon" className="h-10 w-10 shrink-0 rounded-xl" onClick={() => sendMessage(input)} disabled={!input.trim() || isThinking}>
               <ArrowUp className="h-4 w-4" />
             </Button>
           </motion.div>
           <p className="mt-2 text-center text-[10px] text-slate-600">
-            PolicyMitra AI can make mistakes. Verify with official policy documents.
+            PolicyMitra AI answers only from retrieved evidence in the uploaded policy.
           </p>
         </div>
       </div>
