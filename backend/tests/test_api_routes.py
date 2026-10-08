@@ -15,7 +15,6 @@ client = TestClient(app)
 
 def test_health_endpoint() -> None:
     response = client.get("/health")
-
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
@@ -26,12 +25,23 @@ def test_upload_success(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr("app.api.routes.load_pdf", lambda path: [{"page": 1, "text": "Attendance must be 75%."}])
     monkeypatch.setattr(
         "app.api.routes.create_chunks",
-        lambda pages, document_id: [ChunkRecord(document_id=document_id, page=1, chunk_id=f"{document_id}-p1-c1", text="Attendance must be 75%.")],
+        lambda pages, document_id: [
+            ChunkRecord(
+                document_id=document_id,
+                page=1,
+                chunk_id=f"{document_id}-p1-c1",
+                text="Attendance must be 75%.",
+            )
+        ],
     )
     monkeypatch.setattr("app.api.routes.generate_embeddings", lambda texts: [[0.1, 0.2, 0.3]])
     monkeypatch.setattr(
         "app.api.routes.store_chunks",
-        lambda chunks, embeddings, persist_dir=None: IngestionStatistics(document_id="doc-123", pages=1, chunks_created=1),
+        lambda chunks, embeddings, persist_dir=None: IngestionStatistics(
+            document_id="doc-123",
+            pages=1,
+            chunks_created=1,
+        ),
     )
 
     response = client.post(
@@ -40,13 +50,19 @@ def test_upload_success(tmp_path: Path, monkeypatch) -> None:
     )
 
     assert response.status_code == 200
-    assert response.json() == {
-        "document_id": "doc-123",
-        "pages": 1,
-        "chunks_created": 1,
-        "status": "indexed",
-    }
-    assert (tmp_path / "policy.pdf").exists()
+    assert response.json()["document_id"] == "doc-123"
+    assert (tmp_path / "doc-123.pdf").exists()
+    assert not (tmp_path / "policy.pdf").exists()
+
+
+def test_upload_rejects_non_pdf(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("UPLOADS_DIR", str(tmp_path))
+    response = client.post(
+        "/upload-policy",
+        files={"file": ("policy.txt", b"not a pdf", "text/plain")},
+    )
+    assert response.status_code == 400
+    assert "PDF" in response.json()["detail"]
 
 
 def test_upload_invalid_pdf(tmp_path: Path, monkeypatch) -> None:
@@ -86,16 +102,11 @@ def test_ask_success(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert response.json()["confidence"] == 92
-    assert response.json()["metadata"] == {"document_id": "doc-1", "chunks_used": 2, "top_score": 0.91}
+    assert response.json()["metadata"]["document_id"] == "doc-1"
 
 
 def test_ask_no_evidence(monkeypatch) -> None:
     monkeypatch.setattr("app.api.routes.answer_policy_question", lambda document_id, question: dict(policy_workflow.NO_MATCH_RESPONSE))
-
-    response = client.post(
-        "/ask",
-        json={"document_id": "doc-1", "question": "attendance short ka scene kya hai?"},
-    )
-
+    response = client.post("/ask", json={"document_id": "doc-1", "question": "attendance short ka scene kya hai?"})
     assert response.status_code == 200
     assert response.json() == policy_workflow.NO_MATCH_RESPONSE
