@@ -94,7 +94,7 @@ This directly addresses the hackathon's campus policy navigation and multilingua
 <div align="center">
 
 ![Version](https://img.shields.io/badge/version-v1.0-blue)
-![Build](https://img.shields.io/github/actions/workflow/status/your-org/policymitra/main.yml)
+
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/Python-3.11-yellow)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688)
@@ -104,7 +104,7 @@ This directly addresses the hackathon's campus policy navigation and multilingua
 ![ChromaDB](https://img.shields.io/badge/ChromaDB-purple)
 ![Docker](https://img.shields.io/badge/Docker-2496ED)
 ![Open Source](https://img.shields.io/badge/Open%20Source-Yes-success)
-![Stars](https://img.shields.io/github/stars/your-org/policymitra?style=social)
+
 
 </div>
 
@@ -704,7 +704,7 @@ Campus Copilot Ecosystem : p4, after p3, 60d
 # 🚀 Local Setup
 
 ```bash
-git clone https://github.com/your-org/policymitra-ai.git
+git clone https://github.com/ishitaarya/Policy-Mitra-AI.git
 
 cd policymitra-ai
 ```
@@ -830,3 +830,63 @@ Built for **AI for Impact Hackathon**
 ### ⭐ If this project helps students, consider starring the repository.
 
 </div>
+
+
+---
+
+## 🔐 Security and production configuration
+
+Do not commit real API keys. Copy `backend/.env.example` to `backend/.env` for local development and provide deployment secrets through the hosting platform.
+
+The backend now:
+- accepts PDF policy documents only;
+- enforces a configurable upload limit;
+- stores uploaded documents by content-derived ID rather than user-controlled filenames;
+- filters retrieval by document ID;
+- rejects weak retrieval evidence before calling the LLM;
+- returns UNKNOWN instead of guessing when evidence is insufficient;
+- validates the LLM's structured response.
+
+For production, set `CORS_ORIGINS` to the deployed frontend origin and use persistent storage for ChromaDB and uploaded PDFs.
+
+## 🐳 Docker
+
+For a production-like local stack:
+
+```bash
+cp backend/.env.example backend/.env
+# Add your real NAVIGATE_API_KEY to backend/.env
+docker compose up --build
+```
+
+The frontend is served on port 8080 and the FastAPI backend on port 8000.
+
+## 🧠 Evidence-grounded workflow
+
+```text
+Upload official policy PDF
+        ↓
+Text extraction / OCR fallback
+        ↓
+Chunking + embeddings
+        ↓
+Document-scoped Chroma retrieval
+        ↓
+Retrieval confidence gate
+        ↓
+Evidence-only structured LLM response
+        ↓
+Risk + action items + consequence + source excerpts
+```
+
+If retrieved evidence is below the configured threshold, the workflow stops before generation and returns:
+
+```json
+{
+  "answer": "Bhai ye policy document mein nahi mila.",
+  "risk_level": "UNKNOWN",
+  "confidence": 0,
+  "action_items": [],
+  "sources": []
+}
+```
