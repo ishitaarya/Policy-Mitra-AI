@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 MAX_UPLOAD_BYTES = int(float(os.getenv("MAX_UPLOAD_MB", "15")) * 1024 * 1024)
+DEBUG_ENDPOINTS_ENABLED = os.getenv("ENABLE_DEBUG_ENDPOINTS", "false").lower() == "true"
 
 
 def _uploads_dir() -> Path:
@@ -134,6 +135,8 @@ async def ask_policy_question(payload: AskRequest) -> dict[str, object]:
 
 @router.get("/debug/chunks/{document_id}")
 async def debug_chunks(document_id: str) -> dict[str, object]:
+    if not DEBUG_ENDPOINTS_ENABLED:
+        raise HTTPException(status_code=404, detail="Not found")
     chroma_dir = _chroma_dir()
     chunks = get_document_chunks(document_id=document_id, persist_dir=chroma_dir)
     return {
@@ -157,6 +160,8 @@ async def debug_retrieval(
     document_id: str = Query(...),
     question: str = Query(..., min_length=1),
 ) -> dict[str, object]:
+    if not DEBUG_ENDPOINTS_ENABLED:
+        raise HTTPException(status_code=404, detail="Not found")
     chroma_dir = _chroma_dir()
     retrieved_chunks = retrieve_context(document_id=document_id, question=question, persist_dir=chroma_dir)
     return {
