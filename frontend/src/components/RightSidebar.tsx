@@ -1,20 +1,17 @@
 import { motion } from 'framer-motion'
-import {
-  AlertTriangle,
-  BookOpen,
-  CheckCircle2,
-  Circle,
-  FileText,
-  Tag,
-} from 'lucide-react'
+import { AlertTriangle, BookOpen, CheckCircle2, Circle, FileText } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RiskDashboard } from '@/components/RiskDashboard'
-import { initialMessages } from '@/data/mock'
+import type { ChatMessage } from '@/types'
 
-export function RightSidebar() {
-  const latestAI = initialMessages.find((m) => m.role === 'assistant')
+interface RightSidebarProps {
+  latestAI: ChatMessage | null
+}
+
+export function RightSidebar({ latestAI }: RightSidebarProps) {
   const actions = latestAI?.actions ?? []
+  const source = latestAI?.sources?.[0]
 
   return (
     <motion.aside
@@ -27,11 +24,14 @@ export function RightSidebar() {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-red-400" />
-            Risk Score
+            Risk Assessment
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex justify-center pb-5">
-          <RiskDashboard score={latestAI?.riskScore ?? 0} />
+        <CardContent className="flex flex-col items-center gap-2 pb-5">
+          <RiskDashboard score={latestAI?.riskScore ?? 0} riskLevel={latestAI?.riskLevel} />
+          <p className="text-[10px] text-slate-500">
+            Confidence: {latestAI ? `${latestAI.confidence ?? 0}%` : '—'}
+          </p>
         </CardContent>
       </Card>
 
@@ -43,22 +43,12 @@ export function RightSidebar() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {actions.map((action, i) => (
-            <motion.div
-              key={action.id}
-              className="flex items-start gap-2.5 rounded-lg p-2 text-xs text-slate-300"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 * i }}
-            >
-              {action.completed ? (
-                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-400" />
-              ) : (
-                <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
-              )}
+          {actions.length ? actions.map((action, i) => (
+            <motion.div key={action.id} className="flex items-start gap-2.5 rounded-lg p-2 text-xs text-slate-300" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 * i }}>
+              {action.completed ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-400" /> : <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />}
               <span>{action.text}</span>
             </motion.div>
-          ))}
+          )) : <p className="text-xs text-slate-500">No policy-backed action items.</p>}
         </CardContent>
       </Card>
 
@@ -66,38 +56,38 @@ export function RightSidebar() {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-violet-400" />
-            Source Citation
+            Source Evidence
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <FileText className="h-3.5 w-3.5 text-slate-500" />
-            <span className="text-xs text-slate-300">
-              Page {latestAI?.source?.page}
-            </span>
-          </div>
-          <p className="text-[10px] font-medium text-violet-300">
-            {latestAI?.source?.section}
-          </p>
-          <p className="rounded-lg bg-slate-800/40 p-3 text-xs italic leading-relaxed text-slate-400">
-            "{latestAI?.source?.excerpt}"
-          </p>
+          {source ? (
+            <>
+              <div className="flex items-center gap-2">
+                <FileText className="h-3.5 w-3.5 text-slate-500" />
+                <span className="text-xs text-slate-300">
+                  {source.documentName} · Page {source.page}
+                </span>
+              </div>
+              <p className="rounded-lg bg-slate-800/40 p-3 text-xs italic leading-relaxed text-slate-400">
+                "{source.excerpt}"
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-slate-500">Sources will appear after a grounded answer.</p>
+          )}
         </CardContent>
       </Card>
 
       <Card className="glass-hover">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2">
-            <Tag className="h-4 w-4 text-cyan-400" />
-            Policy Category
-          </CardTitle>
+          <CardTitle>Policy Result</CardTitle>
         </CardHeader>
         <CardContent>
           <Badge variant="cyan" className="text-xs">
-            {latestAI?.policyCategory}
+            {latestAI?.riskLevel ?? 'NO RESULT'}
           </Badge>
           <p className="mt-3 text-xs text-slate-400">
-            {latestAI?.requirement}
+            {latestAI?.consequence ?? 'Ask a question about the uploaded policy.'}
           </p>
         </CardContent>
       </Card>
