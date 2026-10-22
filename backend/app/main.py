@@ -1,6 +1,11 @@
 from pathlib import Path
 import os
 
+from dotenv import load_dotenv
+
+# Load backend/.env before importing modules that read environment configuration.
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -9,9 +14,6 @@ from app.api.routes import router as api_router
 from app.exceptions import CorruptedPDFError, EmptyDocumentError, ModelConfigurationError, NoExtractableTextError, WorkflowError
 from app.utils.logger import configure_logging
 
-from dotenv import load_dotenv
-
-load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 configure_logging()
 
 app = FastAPI(
