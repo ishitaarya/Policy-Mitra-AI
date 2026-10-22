@@ -30,11 +30,12 @@ class StructuredResponseError(ValueError):
         self.raw_content = raw_content
 
 
-def _read_env(name: str, fallback: str | None = None) -> str:
-    value = os.getenv(name)
-    if value:
-        return value
-    return os.getenv(fallback, "") if fallback else ""
+def _read_first_env(*names: str, default: str = "") -> str:
+    for name in names:
+        value = os.getenv(name, "").strip()
+        if value:
+            return value
+    return default
 
 
 @lru_cache(maxsize=1)
@@ -49,22 +50,42 @@ def _clean_json_output(content: str) -> str:
     content = content.strip()
     fence = chr(96) * 3
     if content.startswith(fence):
-        content = re.sub(r"^" + re.escape(fence) + r"(?:json)?\s*(.*?)\s*" + re.escape(fence) + r"$", r"\1", content, flags=re.DOTALL)
+        content = re.sub(
+            r"^" + re.escape(fence) + r"(?:json)?\s*(.*?)\s*" + re.escape(fence) + r"$",
+            r"\1",
+            content,
+            flags=re.DOTALL,
+        )
     return content.strip()
 
 
-class NavigateLabsLLMService:
-    def __init__(self) -> None:
-        self.api_key = _read_env("NAVIGATE_API_KEY", "NAVIGATE_LABS_API_KEY")
-        self.base_url = _read_env("NAVIGATE_BASE_URL", "NAVIGATE_LABS_BASE_URL")
-        self.model_name = _read_env("MODEL_NAME", "NAVIGATE_LABS_MODEL")
+class GrokLLMService:
+    """Grok chat completions via xAI's OpenAI-compatible API."""
 
-        if not self.api_key or not self.base_url or not self.model_name:
-            raise ModelConfigurationError("Missing Navigate Labs configuration")
+    def __init__(self) -> None:
+        # GROK_API_KEY is preferred; XAI_API_KEY is also accepted. Legacy variable
+        # names remain supported so existing local .env files can be migrated gradually.
+        self.api_key = _read_first_env(
+            "GROK_API_KEY", "XAI_API_KEY", "NAVIGATE_API_KEY", "NAVIGATE_LABS_API_KEY"
+        )
+        self.base_url = _read_first_env(
+            "GROK_BASE_URL", "XAI_BASE_URL", "NAVIGATE_BASE_URL", "NAVIGATE_LABS_BASE_URL",
+            default="https://api.x.ai/v1",
+        )
+        self.model_name = _read_first_env(
+            "GROK_MODEL", "XAI_MODEL", "MODEL_NAME", "NAVIGATE_LABS_MODEL",
+            default="grok-3-mini",
+        )
+
+        if not self.api_key:
+            raise ModelConfigurationError(
+                "Missing Grok API key. Set GROK_API_KEY (or XAI_API_KEY) in backend/.env."
+            )
+        if not self.base_url or not self.model_name:
+            raise ModelConfigurationError("Missing Grok base URL or model name")
 
         self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
         self.system_prompt = load_system_prompt()
-        self.validate_model()
 
     def list_models(self) -> list[str]:
         response = self.client.models.list()
@@ -72,7 +93,10 @@ class NavigateLabsLLMService:
 
     def validate_model(self) -> None:
         if self.model_name not in self.list_models():
-            raise ModelConfigurationError(f"Model '{self.model_name}' is not available")
+            raise ModelConfigurationError(
+                f"Grok model '{self.model_name}' was not returned by the API. "
+                "Check GROK_MODEL against the models enabled for your xAI API key."
+            )
 
     def _build_messages(self, evidence: str, question: str) -> list[dict[str, str]]:
         return [
@@ -87,21 +111,28 @@ class NavigateLabsLLMService:
         if not evidence.strip():
             return dict(EMPTY_EVIDENCE_RESPONSE)
 
-        response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=self._build_messages(evidence=evidence, question=question),
-            temperature=0,
-        )
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=self._build_messages(evidence=evidence, question=question),
+                temperature=0,
+            )
+        except Exception as exc:
+            logger.exception("Grok chat completion failed")
+            raise ModelConfigurationError(
+                "Grok API request failed. Check GROK_API_KEY, GROK_MODEL, network access, and xAI API quota."
+            ) from exc
+
         content = response.choices[0].message.content
         if not content:
-            raise StructuredResponseError("Empty response from model", raw_content="")
+            raise StructuredResponseError("Empty response from Grok", raw_content="")
 
         content = _clean_json_output(content)
         try:
             parsed = json.loads(content)
         except json.JSONDecodeError as exc:
             raise StructuredResponseError(
-                f"Failed to parse model response as JSON: {exc}",
+                f"Failed to parse Grok response as JSON: {exc}",
                 raw_content=content,
             ) from exc
 
@@ -133,13 +164,16 @@ class NavigateLabsLLMService:
         }
 
 
-_default_service: NavigateLabsLLMService | None = None
+# Preserve the old class name for imports from earlier versions.
+NavigateLabsLLMService = GrokLLMService
+
+_default_service: GrokLLMService | None = None
 
 
-def _get_service() -> NavigateLabsLLMService:
+def _get_service() -> GrokLLMService:
     global _default_service
     if _default_service is None:
-        _default_service = NavigateLabsLLMService()
+        _default_service = GrokLLMService()
     return _default_service
 
 
@@ -168,5 +202,5 @@ def generate_text_response(evidence: str, question: str, system_prompt: str) -> 
     )
     content = response.choices[0].message.content
     if not content:
-        raise ValueError("Empty response from model")
+        raise ValueError("Empty response from Grok")
     return content
