@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Any
 
+from app.exceptions import ModelConfigurationError
 from app.services import llm_service
 from app.services.retrieval_service import build_context, retrieve_relevant_chunks
 
@@ -46,6 +48,35 @@ def _build_action_plan(action_items: list[str], risk_level: str) -> list[dict[st
     return [{"task": task, "priority": _assign_priority_for_task(task, risk_level)} for task in action_items]
 
 
+def _extractive_fallback(chunks: list[dict[str, object]], question: str) -> str:
+    """Return a sentence copied from retrieved policy evidence when no LLM is configured."""
+    stop_words = {
+        "what", "is", "the", "a", "an", "of", "to", "for", "in", "on", "and",
+        "or", "if", "does", "do", "i", "we", "you", "required", "please", "tell",
+        "me", "about", "minimum", "happen", "happens",
+    }
+    terms = {
+        token.lower()
+        for token in re.findall(r"[a-zA-Z0-9%]+", question)
+        if token.lower() not in stop_words and len(token) > 1
+    }
+    candidates: list[tuple[int, int, str]] = []
+    for chunk in chunks:
+        text = " ".join(str(chunk.get("text", "")).split())
+        for sentence in re.split(r"(?<=[.!?])\s+", text):
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+            words = {token.lower() for token in re.findall(r"[a-zA-Z0-9%]+", sentence)}
+            overlap = len(terms & words)
+            # Prefer concise sentences with strong lexical overlap, while retaining numeric policy rules.
+            numeric_bonus = 1 if re.search(r"\d+\s*%", sentence) else 0
+            candidates.append((overlap + numeric_bonus, -len(sentence), sentence))
+    if not candidates:
+        return "Relevant policy evidence was retrieved, but no complete sentence could be extracted."
+    return max(candidates)[2]
+
+
 def answer_policy_question(
     document_id: str,
     question: str,
@@ -65,7 +96,7 @@ def answer_policy_question(
         return dict(NO_MATCH_RESPONSE)
 
     top_score = float(retrieval["top_score"])
-    min_score = float(os.getenv("RETRIEVAL_MIN_SCORE", "0.45"))
+    min_score = float(os.getenv("RETRIEVAL_MIN_SCORE", "0.30"))
     if top_score < min_score:
         logger.warning(
             "workflow | document_id=%s | weak evidence top_score=%.4f threshold=%.4f",
@@ -80,6 +111,25 @@ def answer_policy_question(
 
     try:
         llm_response = llm_service.generate_structured_response(evidence=context, question=question)
+    except ModelConfigurationError:
+        # Local development can still verify PDF retrieval without an external LLM key.
+        # This fallback only quotes a sentence from retrieved evidence and never invents policy.
+        logger.warning("workflow | LLM is not configured; returning extractive evidence-only answer")
+        return {
+            "answer": _extractive_fallback(chunks, question),
+            "risk_level": "UNKNOWN",
+            "confidence": confidence,
+            "action_items": [],
+            "action_plan": [],
+            "consequence": "LLM is not configured; this is an extractive answer from policy text only.",
+            "sources": _build_sources(chunks),
+            "metadata": {
+                "document_id": document_id,
+                "chunks_used": len(chunks),
+                "top_score": round(top_score, 2),
+                "mode": "extractive_fallback",
+            },
+        }
     except llm_service.StructuredResponseError:
         return dict(NO_MATCH_RESPONSE)
 
