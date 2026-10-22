@@ -730,6 +730,7 @@ cd backend
 
 pip install -r requirements.txt
 
+# Configure GROK_API_KEY, GROK_BASE_URL=https://api.x.ai/v1, and GROK_MODEL in backend/.env
 uvicorn app.main:app --reload
 ```
 
@@ -836,7 +837,7 @@ Built for **AI for Impact Hackathon**
 
 ## 🔐 Security and production configuration
 
-Do not commit real API keys. Copy `backend/.env.example` to `backend/.env` for local development and provide deployment secrets through the hosting platform.
+Do not commit real API keys. Copy `backend/.env.example` to `backend/.env` for local development and provide deployment secrets through the hosting platform. The backend uses the xAI Grok API through its OpenAI-compatible endpoint.
 
 The backend now:
 - accepts PDF policy documents only;
@@ -855,7 +856,7 @@ For a production-like local stack:
 
 ```bash
 cp backend/.env.example backend/.env
-# Add your real NAVIGATE_API_KEY to backend/.env
+# Add your real GROK_API_KEY to backend/.env
 docker compose up --build
 ```
 
@@ -890,3 +891,18 @@ If retrieved evidence is below the configured threshold, the workflow stops befo
   "sources": []
 }
 ```
+
+
+## Grok API configuration
+
+Create `backend/.env` from `backend/.env.example` and set your xAI key:
+
+```env
+GROK_API_KEY=your_xai_api_key
+GROK_BASE_URL=https://api.x.ai/v1
+GROK_MODEL=grok-3-mini
+```
+
+Use a model ID enabled for your xAI account if it differs from the example. Keep the key in the backend environment only; never place it in frontend variables or commit it to Git.
+
+When no Grok key is configured, PolicyMitra can return a clearly marked extractive sentence from retrieved policy evidence for local retrieval testing. Full AI-generated answers and risk assessments require a working Grok API key.
