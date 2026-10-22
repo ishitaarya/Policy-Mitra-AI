@@ -72,8 +72,9 @@ def test_missing_model(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(llm_service, "OpenAI", lambda **kwargs: FakeOpenAIClient(["supported-model"]))
     llm_service._default_service = None
 
+    service = llm_service.NavigateLabsLLMService()
     with pytest.raises(ModelConfigurationError):
-        llm_service.NavigateLabsLLMService()
+        service.validate_model()
 
 
 def test_empty_evidence_returns_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -103,3 +104,16 @@ def test_invalid_json_response(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(ValueError):
         service.generate_structured_response(evidence="75% attendance required.", question="attendance?")
+
+
+def test_grok_environment_variables_take_precedence(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GROK_API_KEY", "grok-test-key")
+    monkeypatch.setenv("GROK_BASE_URL", "https://api.x.ai/v1")
+    monkeypatch.setenv("GROK_MODEL", "grok-test-model")
+    monkeypatch.setenv("NAVIGATE_API_KEY", "legacy-key")
+    monkeypatch.setattr(llm_service, "OpenAI", lambda **kwargs: FakeOpenAIClient(["grok-test-model"]))
+    service = llm_service.GrokLLMService()
+
+    assert service.api_key == "grok-test-key"
+    assert service.base_url == "https://api.x.ai/v1"
+    assert service.model_name == "grok-test-model"
