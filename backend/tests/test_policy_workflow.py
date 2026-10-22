@@ -103,3 +103,43 @@ def test_llm_exception_propagates(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(ValueError, match="LLM failed"):
         policy_workflow.answer_policy_question(document_id="doc-1", question="Attendance?")
+
+
+
+def test_missing_llm_configuration_returns_extractive_policy_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RETRIEVAL_MIN_SCORE", "0.30")
+    monkeypatch.setattr(
+        policy_workflow,
+        "retrieve_relevant_chunks",
+        lambda **kwargs: {
+            "query": kwargs["query"],
+            "chunks": [
+                {
+                    "document_id": kwargs["document_id"],
+                    "page": 2,
+                    "chunk_id": "attendance-rule",
+                    "text": "Students must attend at least 75% of scheduled classes in each course to be eligible to sit the final examination.",
+                    "score": 0.3931,
+                }
+            ],
+            "top_score": 0.3931,
+            "confidence": "LOW",
+        },
+    )
+    monkeypatch.setattr(
+        policy_workflow.llm_service,
+        "generate_structured_response",
+        lambda **kwargs: (_ for _ in ()).throw(
+            policy_workflow.ModelConfigurationError("Missing Navigate Labs configuration")
+        ),
+    )
+
+    response = policy_workflow.answer_policy_question(
+        document_id="doc-1",
+        question="What is the minimum attendance required to sit the final examination?",
+    )
+
+    assert "75%" in response["answer"]
+    assert response["risk_level"] == "UNKNOWN"
+    assert response["sources"][0]["page"] == 2
+    assert response["metadata"]["mode"] == "extractive_fallback"
